@@ -1,0 +1,4 @@
+.Rdata
+*.r~
+.gitignore~
+
