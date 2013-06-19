@@ -91,7 +91,7 @@ loadDataSet <- function(dataset.name){
   # the data frame of a fixed layout.
   
   if (dataset.name == "sanger"){
-    load("datasets/sanger.RData")
+    load("../datasets/sanger.RData")
     
     drug.names <- featureNames(sangerSet)
     cell.lines <- sampleNames(sangerSet)
@@ -124,7 +124,7 @@ getDrugNames <- function(dataset.name){
   drug.names <- c()
   
   if (dataset.name == "sanger"){
-    load("datasets/sanger.RData") 
+    load("../datasets/sanger.RData") 
     drug.names <- featureNames(sangerSet)
     drugs.span <- 1:139
     drug.names <- gsub("_IC_50$","",drug.names[drugs.span])  
@@ -137,7 +137,7 @@ getCellLines <- function(dataset.name){
   drug.names <- c()
   
   if (dataset.name == "sanger"){
-    load("datasets/sanger.RData") 
+    load("../datasets/sanger.RData") 
     cell.lines <- sampleNames(sangerSet)
   }
   

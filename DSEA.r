@@ -6,8 +6,8 @@
 # (dmitrii.bychkov@helsinki.fi)
 #######################################################
 
-setwd("/home/comrade/Ubuntu One/DSEA")
-dir.create( "reports", showWarnings=FALSE );
+setwd("/home/comrade/Ubuntu One/DSEA/r-code")
+dir.create( "../reports", showWarnings=FALSE );
 
 library(vcd)
 library(grid)

@@ -1,4 +1,4 @@
-setwd("/home/comrade/Ubuntu One/DSEA")
+setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 library(ggplot2)
 library(grid)
 
