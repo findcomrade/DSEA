@@ -2,3 +2,5 @@
 .Rhistory
 *.r~
 .gitignore~
+.Rproj.user
+r-code.Rproj
