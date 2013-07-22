@@ -21,6 +21,7 @@ source("DSEA_SUP.r")
 ds.name <- "sanger"
 FRAME <- loadDataSet(ds.name)
 cell.lines <- getCellLines(ds.name)
+pd <- pData(sangerSet)
 
 # VISUALIZE (SENSIVITY) for ONE of the CELL LINES
 plotDrugSensitivity("T47D")  # TODO: implement choice of the cell.line
@@ -67,7 +68,7 @@ introduction.SECTION <- addTo( introduction.SECTION, newList(
 
 introduction.SECTION <- addTo( introduction.SECTION, newParagraph(asStrong("HYPOTHESIS: "), " The most sensitive drugs in any given individual cancer sample tend to show similar response in a cohort of other similar samples.") )
 figure.file <- paste("sens_example",".png",sep="")
-png( paste( "reports/", figure.file, sep="" ), width=750, height=500 )
+png( paste( "../reports/", figure.file, sep="" ), width=750, height=500 )
 plotDrugSensitivity("T47D") 
 dev.off()
 introduction.SECTION <- addTo( introduction.SECTION, newFigure(figure.file, "T47D Cell Line (Sanger Set: http://www.cancerrxgene.org/)") )
@@ -89,18 +90,18 @@ dataset.overview <- dataset.overview[-length(dataset.overview[,1]),]  # trim the
 dataset.SECTION <- addTo( dataset.SECTION, newTable( dataset.overview, "Target Cell Line Overview" ) )
 
 figure.file <- paste("sens_example",".png",sep="")
-png( paste( "reports/", figure.file, sep="" ), width=750, height=500 )
+png( paste( "../reports/", figure.file, sep="" ), width=750, height=500 )
 plotDrugSensitivity("T47D") 
 dev.off()
 dataset.SECTION <- addTo( dataset.SECTION, newFigure( figure.file, "T47D Cell Line" ) )
 
 dataset.distr.SECTION <- newSection( "Tissue and Diagnosis Distribution" )
 figure.file <- paste("tissue_freq",".png",sep="")
-ggsave(plotTissueFreq(), filename=paste( "reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
+ggsave(plotTissueFreq(), filename=paste( "../reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
 dataset.distr.SECTION <- addTo( dataset.distr.SECTION, newFigure( figure.file, "Tissue Frequency" ) )
 
 figure.file <- paste("diagnosis_freq",".png",sep="")
-ggsave(plotDiagnosisFreq(), filename=paste( "reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
+ggsave(plotDiagnosisFreq(), filename=paste( "../reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
 dataset.distr.SECTION <- addTo( dataset.distr.SECTION, newFigure( figure.file, "Diagnosis Frequency" ) )
 
 dataset.SECTION <- addTo(dataset.SECTION, dataset.distr.SECTION)
@@ -143,7 +144,7 @@ methodology.SECTION <- addTo( methodology.SECTION, newTable(method.table1, paste
 
 figure.file <- paste("method_example",".png",sep="")
 figure.plot <- genOverlapPlot( target.cell.line, as.character(ENRICHMENT[which,1]), target.top.count, as.numeric(ENRICHMENT[which,2]) )
-ggsave(figure.plot, filename=paste( "reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
+ggsave(figure.plot, filename=paste( "../reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
 methodology.SECTION <- addTo( methodology.SECTION, newFigure( figure.file, "Overlapping Drugs Among Top Sensitive" ) )
                               
 methodology.SECTION <- addTo( methodology.SECTION, newTable(ENRICHMENT[which,], paste(line1, " Enrichment ", sep="")) ) 
@@ -164,11 +165,11 @@ enrichment.SECTION <- addTo( enrichment.SECTION, newTable( TARGET.CL.OVERVIEW, "
 enrichment.SECTION <- addTo( enrichment.SECTION, newTable( SUMMARY, "Top Scored Cell Lines" ) )
 
 figure.file <- paste("tissue_enrich",".png",sep="")
-ggsave(plotEnrishedTissue(), filename=paste( "reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
+ggsave(plotEnrishedTissue(), filename=paste( "../reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
 enrichment.SECTION <- addTo( enrichment.SECTION, newFigure( figure.file, "Enriched Tissues" ) )
 
 figure.file <- paste("diagnosis_enrich",".png",sep="")
-ggsave(plotEnrichedDiagnos(), filename=paste( "reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
+ggsave(plotEnrichedDiagnos(), filename=paste( "../reports/", figure.file, sep="" ), width=300, height=175, limitsize=FALSE, units="mm")
 enrichment.SECTION <- addTo( enrichment.SECTION, newFigure( figure.file, "Enriched Diagnosis" ) )
 
 # --- Acknowledgements ---
@@ -180,4 +181,4 @@ acknowl.SECTION <- addTo( acknowl.SECTION, newList( newParagraph( "MSc. John Pat
 REPORT <- addTo( REPORT, introduction.SECTION, dataset.SECTION, methodology.SECTION, enrichment.SECTION, acknowl.SECTION  );
 
 # render report to file
-writeReport( REPORT, filename="reports/my_report" )
+writeReport( REPORT, filename="../reports/my_report" )
