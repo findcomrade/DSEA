@@ -3,7 +3,7 @@ library(ggplot2)
 library(grid)
 
 source('testing-related.r')
-load("oregon.RData")
+load("../datasets/oregon.RData")
 
 # arrange data
 drug_names <- featureNames(xprOregonSet)
