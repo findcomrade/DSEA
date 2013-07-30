@@ -4,6 +4,7 @@ library(grid)
 library(gplots)
 library(ggplot2)
 library(reshape2)
+require(Nozzle.R1)
 
 load("../datasets/sanger.RData")
 load("../datasets/oregon.RData")
@@ -119,8 +120,8 @@ breast.summary <- data.frame( Drugs.Count=length( unique(breast.DATA$Name.Drug) 
                               L5.Levels=length( unique(breast.ANNO$Level5) ) 
                                                 )
 
-x11()
-par(mfrow=c(2,2))
+x11(); par(mfrow=c(2,2))
+# "k" for levels
 for(k in 1:4){
   count <- table(breast.ANNO[,k+1])
   barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab="\"Breast Data Set\"")
@@ -147,12 +148,12 @@ text(seq(1, length(rownames(breast.matrix)), by=1), -3, srt = 90, pos = 1, xpd =
 
 # (By "Pearson correlation as distance method")
 # Alailable methods for HCLUST: "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
-hr <- hclust(as.dist(1-cor(breast.transponsed, method="pearson")), method="complete")
+hr <- hclust(as.dist(1-cor(breast.transponsed, method="spearman")), method="complete")
 hc <- hclust(as.dist(1-cor(breast.matrix, method="spearman")), method="complete")  
 
 # Cuts the tree and creates color vector for clusters
 mycl <- cutree(hr, h=max(hr$height)/1.5); 
-clusters.frame <- as.data.frame(mycl)  # to use 'clusters.frame' in further analysis
+breast.ClUST <- as.data.frame(mycl)  # to use 'breast.ClUST' in further analysis
 mycolhc <- rainbow(length(unique(mycl)), start=0.1, end=0.9); mycolhc <- mycolhc[as.vector(mycl)] 
 myheatcol <- topo.colors(75)
 
@@ -161,8 +162,50 @@ heatmap.2(breast.matrix, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myh
                   scale="row", trace="none", RowSideColors=mycolhc, cexRow=0.5, cexCol=0.5) 
 
 # PROCESS OBTAINED CLUSTERS from "mycl"
-clusters.frame$DrugName <- rownames(clusters.frame)
-colnames(clusters.frame) <- c("Cluster", "DrugName")
+breast.ClUST$DrugName <- rownames(breast.ClUST)
+colnames(breast.ClUST) <- c("Cluster", "DrugName")
+
+# Add "CHEMBL_ID" from "breast.DICT" -> "breast.ClUST"
+for(alias in breast.ClUST$DrugName){
+  if(sum(breast.DICT["Aliases"] == alias)){
+    breast.ClUST[breast.ClUST[,"DrugName"] == alias,"CHEMBL_ID"] <- breast.DICT[breast.DICT["Aliases"] == alias,"CHEMBL_ID"][1]
+  }
+}
+
+# Add "Cluster" from "breast.ClUST" -> "breat.ANNO"
+not.na <- !is.na(breast.ClUST["CHEMBL_ID"])
+for(id in breast.ANNO$CHEMBL_ID){
+  if(sum(breast.ClUST[not.na,"CHEMBL_ID"] == id)){
+    curr.id <- breast.ClUST[,"CHEMBL_ID"] == id
+    curr.id <- curr.id & not.na
+    breast.ANNO[breast.ANNO[,"CHEMBL_ID"] == id,"Cluster"] <- breast.ClUST[curr.id,"Cluster"]
+  }
+}
+
+x11(); par(mfrow=c(2,2))
+# "k" for levels
+for(k in 1:4){
+  count <- table(breast.ANNO[,"Cluster"], breast.ANNO[,k+1])
+  barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab="\"Breast Data Set\"", legend=rownames(count))
+}
+
+
+barplot(counts, main="Car Distribution by Gears and VS",
+        xlab="Number of Gears", col=c("darkblue","red"),
+        legend = rownames(counts))
+
+for(clst in unique(breast.ClUST$Cluster)){
+  ids <- breast.ClUST[breast.ClUST["Cluster"] == clst,"CHEMBL_ID"]
+  ids <- as.character(ids[!is.na(ids)])  # exclude NAs
+  anno <- breast.ANNO[breast.ANNO[,"CHEMBL_ID"] %in% ids,]
+  
+  x11();  par(mfrow=c(2,2))
+  for(k in 1:4){
+    count <- table(anno[,k+1])
+    barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab=paste("Cluster ", clst, sep=""))
+  }
+}
+
 
 # Prints color key for cluster assignments. The numbers next to the color boxes correspond to the cluster numbers in 'mycl'
 # x11(height=6, width=2); names(mycolhc) <- names(mycl); barplot(rep(10, max(mycl)), col=unique(mycolhc[hr$labels[hr$order]]), horiz=T, names=unique(mycl[hr$order])) 

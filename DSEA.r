@@ -42,7 +42,6 @@ TARGET.CL.OVERVIEW <- pd[pd["Cell.Line"] == as.character(target.cell.line),]
 colnames(TARGET.CL.OVERVIEW)[2] <- "top.count"
 TARGET.CL.OVERVIEW$top.count <- target.top.count
 
-
 # DIAGNOSIS ENRICHMENT
 #plot(plotDiagnosisFreq()) # for initial data set
 #plot( plotEnrichedDiagnos() )
