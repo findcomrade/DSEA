@@ -221,15 +221,7 @@ heatmap.2(ysub, Rowv=as.dendrogram(hrsub), Colv=as.dendrogram(hc), col=myheatcol
 data.frame(Labels=rev(hrsub$labels[hrsub$order])) 
 
 
-### Ovarian DSS values: !!!     ###
-# Drugs: 276 (4 of those do not have a FIMM ID) 
-# Samples: 26; Values: 7176;  NAs: 214
-# ============================== #
 
 
-### Leukemia DSS values:       ###
-# Drugs: 240; Samples: 32
-# Values: 7680;  NAs: 74
-# ============================== #
 
 
