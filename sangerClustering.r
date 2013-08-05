@@ -1,8 +1,49 @@
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 
 library(grid)
+library(gplots)
 library(ggplot2)
 library(reshape2)
+require(Nozzle.R1)
+
+# load("../datasets/sanger.RData")
+# load("../datasets/oregon.RData")
+# load("../datasets/merged_chembl.RData")
+
+### Import Data Sets and Annotations ###
+# ==================================== #
+# merged_chembl_ATC_SCID -> chembl.ANNO  # Chembl Drug Annotations
+# 
+# data.frame(exprs(sangerSet)) -> sanger.DATA
+# data.frame(exprs(xprOregonSet)) -> oregon.DATA
+# 
+# read.csv(file="../datasets/fimm_chembl_dict.csv", head=TRUE, sep=",") -> fimm.DICT
+# read.csv(file="../datasets/sanger_chembl_dict.csv", head=TRUE, sep=",") -> sanger.DICT
+# read.csv(file="../datasets/oregon_chembl_dict.csv", head=TRUE, sep=",") -> oregon.DICT
+#
+# pData(sangerSet) -> sanger.sample.ANNO
+# pData(xprOregonSet) -> oregon.sample.ANNO
+
+# cleanup
+# remove(sangerSet, xprOregonSet, merged_chembl_ATC_SCID)
+
+
+### Data Preparetion  ###
+# ===================== #
+
+# Snager Set:
+sanger.DATA <- sanger.DATA[1:138,]  # Take only the first 138 drugs (those with IC_50 values)
+rownames(sanger.DATA) <- gsub("_IC_50$", "", rownames(sanger.DATA))  # Trim "_IC_50$" from drug names 
+
+# Oregon Set:
+colnames(oregon.DATA) <- rownames(oregon.sample.ANNO)  # Trim "X" from sample name
+
+
+
+
+################################
+###  Below is very old code  ###
+################################
 
 load("../datasets/sanger.RData")
 

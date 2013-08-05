@@ -220,5 +220,9 @@ cluster.section.REPORT <- addTo( cluster.section.REPORT, newFigure(figure.file, 
 # Prints color key for cluster assignments. The numbers next to the color boxes correspond to the cluster numbers in 'mycl'
 # x11(height=6, width=2); names(mycolhc) <- names(mycl); barplot(rep(10, max(mycl)), col=unique(mycolhc[hr$labels[hr$order]]), horiz=T, names=unique(mycl[hr$order])) 
 
+# Save R Objects to a file
+save(breast.ClUST, breast.ANNO, breast.DATA, breast.DICT, breast.SUMMARY,
+     breast.matrix, breast.transponsed, breast.OUT, file = "breastClust.RData")
+
 REPORT <- addTo( REPORT, fimmcollection.section.REPORT, dataset.section.REPORT, cluster.section.REPORT  );
 writeReport( REPORT, filename="../reports/BreastTamoxifen/REPORT" )

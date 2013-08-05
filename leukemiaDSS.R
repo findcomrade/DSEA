@@ -211,5 +211,9 @@ cluster.section.REPORT <- addTo( cluster.section.REPORT, newFigure(figure.file, 
 # Prints color key for cluster assignments. The numbers next to the color boxes correspond to the cluster numbers in 'mycl'
 # x11(height=6, width=2); names(mycolhc) <- names(mycl); barplot(rep(10, max(mycl)), col=unique(mycolhc[hr$labels[hr$order]]), horiz=T, names=unique(mycl[hr$order])) 
 
+# Save R Objects to a file
+save(leukemia.ClUST, leukemia.ANNO, leukemia.DATA, leukemia.DICT, leukemia.SUMMARY,
+     leukemia.matrix, leukemia.transponsed, leukemia.OUT, file = "leukemiaClust.RData")
+
 REPORT <- addTo( REPORT, fimmcollection.section.REPORT, dataset.section.REPORT, cluster.section.REPORT  );
 writeReport( REPORT, filename="../reports/Leukemia/REPORT" )
