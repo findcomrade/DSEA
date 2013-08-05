@@ -5,3 +5,5 @@
 .gitignore~
 .Rproj.user
 r-code.Rproj
+*.json
+*.json~
