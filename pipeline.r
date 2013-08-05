@@ -11,6 +11,7 @@ source('pipeline_sup.R')
 library(grid)
 library(gplots)
 library(ggplot2)
+library(RJSONIO)
 library(reshape2)
 require(Nozzle.R1)
 
@@ -18,7 +19,7 @@ require(Nozzle.R1)
 read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> leukemia.DATA
 
 # 2. Identify (a) top Sensitive and (b) Resistant Drugs
-cell.line <- "SR"
+cell.line <- "K562"
 
 plotDrugSensitivity(leukemia.matrix, cell.line)
 drugs.sensitive <- topSensitive(leukemia.matrix, cell.line)
@@ -38,5 +39,9 @@ for(cluster in unique(leukemia.ClUST$Cluster)){
   enrichment.table[cluster,"Cluster.Size"] <- length(cluster.set)
   enrichment.table[cluster,"DB.Size"] <- length( unique(leukemia.ClUST$DrugName) ) 
   enrichment.table[cluster,"Sensitive.Count"] <- sum(drugs.sensitive$DrugName %in% cluster.set)
+  enrichment.table[cluster,"Sensitive.Total"] <- length(drugs.sensitive$DrugName)
 }
+
+dropJSON(leukemia.ClUST)
+
 

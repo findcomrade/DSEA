@@ -42,3 +42,26 @@ topResistant <- function(dss.matrix, cell.line){
   
   return (drugs.top)
 }
+
+dropJSON <- function(clusters.data, path="circular.json"){
+  # Generates JSON file fot D3 library
+  # 'clusters.data' - a data frame like e.g. 'leukemia.ClUST'
+  
+  sink(path)
+  cat("{", "\n\t\"name\": \"Data Set\",", "\n\t\"children\": [\n")
+  for (cluster in unique(clusters.data$Cluster)){
+    cat("\t{", "\n\t\"name\": ", paste("\"Cluster ", cluster, "\",", sep=""), "\n\t\"children\": [\n")
+    
+    last.index <- length(clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"])
+    for(drug in clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"]){
+      if( drug == clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"][last.index] ){
+        cat("\t\t{", "\t\"name\": ", paste("\"",drug,"\"", sep=""), " } \n")    
+      }
+      else{ cat("\t\t{", "\t\"name\": ", paste("\"",drug,"\"", sep=""), " }, \n") }
+    }
+    if( cluster == max(unique(clusters.data$Cluster)) ){ cat("\t]", "\n\t}") }
+    else { cat("\t]", "\n\t},") }
+  }
+  cat("]", "\n}")
+  sink()
+}
