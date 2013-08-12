@@ -14,8 +14,12 @@ REPORT <- newCustomReport( "DSEA:", asEmph(" Leukemia Project.") )
 # ==================================== #
 merged_chembl_ATC_SCID -> chembl.ANNO  # Chembl Drug Annotations
 read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> leukemia.DATA
+# exclude a sample:
+tmp <- which( colnames(leukemia.DATA) == "RPMI8226" )
+leukemia.DATA <- leukemia.DATA[,-tmp]
+
 read.csv(file="../datasets/fimm_chembl_dict.csv", head=TRUE, sep=",") -> fimm.DICT
-remove(merged_chembl_ATC_SCID)  # cleanup
+remove(merged_chembl_ATC_SCID, tmp)  # cleanup
 
 ### Produce FIMM Annotations  ###
 # ============================= #
