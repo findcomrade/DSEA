@@ -1,3 +1,12 @@
+#
+# This is cell line explorer.
+# You can plot DSS values distrubution
+# across: a) Cell Lines b) Drugs
+# as well as estimate sensitivity behaviour 
+# of a cell line by a bar plot for druds DSS values
+#
+#######################################################
+
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 source('pipeline_sup.R')
 
