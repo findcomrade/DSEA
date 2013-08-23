@@ -11,6 +11,26 @@ drugSensitivity <- function(dss.matrix, cell.line, cut=25){
                 space=1, axis.lty=1, lwd=2, xaxs="i", yaxs="i", ylab="DSS", main =paste("Drug Sensitivity for \"", cell.line, "\" Cell Line", sep="") )
 }
 
+plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
+  
+  # par(mfrow=c(2,2))
+  layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE))
+  for(k in 1:3){  # "k" for levels
+    count <- table(drug.classes[,k+1])    
+    ordered.data<-data.frame(count)
+    ordered.data<-ordered.data[ order( ordered.data$Freq ), ]
+    
+    print( sum(ordered.data$Freq) )
+    
+    barplot(ordered.data$Freq, axisnames =TRUE, names.arg=ordered.data$Var1, cex.axis = 0.8, cex.names = (0.99-k/10),
+            col=1:length(ordered.data$Freq), main=paste(category.name, " Distribution on Level ", k, sep=""), las=2)
+    
+    #counts <- as.data.frame(count); #colnames(counts) <- c("Class", "Freq"); #counts$Class <- reorder(counts$Class, order(counts$Freq))
+    #ggplot(counts, aes(x=Class, y=Freq, fill=Class)) + geom_bar(stat="identity", position = "dodge")    
+  }
+  
+}
+
 topSensitive <- function(dss.matrix, cell.line, dss.threshold=25){
   # Returns a list of top sensitive drugs for a given cell line
   

@@ -1,5 +1,5 @@
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
-load("../datasets/merged_chembl.RData")
+source('pipeline_sup.R')
 
 library(vcd)
 library(grid)
@@ -10,65 +10,23 @@ library(reshape2)
 require(Nozzle.R1)
 
 REPORT <- newCustomReport( "DSEA:", asEmph(" Leukemia Project.") )
+
 ### Import Data Sets and Annotations ###
 # ==================================== #
-merged_chembl_ATC_SCID -> chembl.ANNO  # Chembl Drug Annotations
 read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> leukemia.DATA
-# exclude a sample:
-tmp <- which( colnames(leukemia.DATA) == "RPMI8226" )
-leukemia.DATA <- leukemia.DATA[,-tmp]
 
-read.csv(file="../datasets/fimm_chembl_dict.csv", head=TRUE, sep=",") -> fimm.DICT
-remove(merged_chembl_ATC_SCID, tmp)  # cleanup
+# Exclude a Sample (to check clustering results)
+#tmp <- which( colnames(leukemia.DATA) == "RPMI8226" )
+#leukemia.DATA <- leukemia.DATA[,-tmp]
 
-### Produce FIMM Annotations  ###
-# ============================= #
-fimmcollection.section.REPORT <- newSection( "Fimm Collection Annotations" )
-atc.subsec.REPORT <- newSection( "Anatomical Therapeutic Chemical Classification System (ATC)" )
-atc.subsec.REPORT <- addTo( atc.subsec.REPORT, newParagraph("This pharmaceutical coding system divides drugs into different groups according to the organ or system on which they act and/or their therapeutic and chemical characteristics. Each bottom-level ATC code stands for a pharmaceutically used substance, or a combination of substances, in a single indication (or use). This means that one drug can have more than one code. (Wikipedia)") )
-atc.subsec.REPORT <- addTo( atc.subsec.REPORT, newList(
-  newParagraph("The ", asStrong("first level"), " of the code indicates the anatomical main group and consists of one letter. There are 14 main groups;"),    
-  newParagraph("The ", asStrong("second level"), " of the code indicates the therapeutic main group and consists of two digits;"),
-  newParagraph("The ", asStrong("third level"), " of the code indicates the therapeutic/pharmacological subgroup and consists of one letter;"),    
-  newParagraph("The ", asStrong("fourth level"), " of the code indicates the chemical/therapeutic/pharmacological subgroup and consists of one letter;"),
-  newParagraph("The ", asStrong("fifth level"), " of the code indicates the chemical substance and consists of two digits.")
-) 
-)
-# Extract relevant information from 'ChEMBL db'
-# to annotate drugs in FIMM data base.
-fimm.drug.count <- length( unique(fimm.DICT$FIMM.batch.ID) )
-drop <- which(is.na(fimm.DICT$CHEMBL_ID))
-fimm.DICT <- fimm.DICT[-drop,]  # drop drugs without chembl_ID in FIMM Dctionary
-fimm.drug.chembl <- length( unique(fimm.DICT$FIMM.batch.ID) )
-fimm.SUMMARY <- data.frame(Drugs.Count=fimm.drug.count, ChEMBL.IDs=fimm.drug.chembl)
-remove(fimm.drug.chembl, fimm.drug.count)
-
-# Build annotation table for FIMM Collection
-# "Level_3_Description" is missing in "chembl.ANNO" !!!
-drop <- chembl.ANNO[,"CHEMBL_ID"] %in% unique(fimm.DICT[,"CHEMBL_ID"]) 
-fimm.ANNO <- chembl.ANNO[drop,c("CHEMBL_ID","Level1","Level2","Level3","Level4","Level5","Level_1_Description","Level_2_Description","Level_4_Description")]
-drop <- which(is.na(fimm.ANNO$Level1))  # drop rows without annotations
-
-fimm.ANNO <- fimm.ANNO[-drop,]
-fimm.ANNO <- unique(fimm.ANNO)  # remove duplicated rows
-fimm.SUMMARY$CheMBL.Annotated <- length(fimm.ANNO$CHEMBL_ID)
-
-fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, atc.subsec.REPORT )
-fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable( fimm.SUMMARY, "FIMM Collection Summary" ) )
-fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable( fimm.DICT[1:7,], "FIMM Dictionary" ) )
-fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable( fimm.ANNO[1:3,], "FIMM Annotations" ) )
-remove(chembl.ANNO, drop)
-
+load('FimmKEGGDrugAnnotations.RData')
 
 #########################################
 ###          DATA EXPLORATION       ####
 #########################################
 
-### Leukemia DSS values:       ###
-# Drugs: 240; Samples: 32
-# Values: 7680;  NAs: 74
-# ============================== #
 dataset.section.REPORT <- newSection( "Data Set Exploration" )
+
 # Convert the data to 'double matrix' and: 
 leukemia.matrix <- leukemia.DATA  # copy
 leukemia.matrix <- data.matrix(leukemia.matrix[,-c(1,2)])  # del 1st & 2nd rows 
@@ -88,40 +46,34 @@ nas <- is.na(leukemia.matrix); leukemia.matrix[nas] <- 0
 nas <- is.na(leukemia.transponsed); leukemia.transponsed[nas] <- 0
 
 # SCREEN SUMMARY
-drop <- fimm.DICT$FIMM.batch.ID %in% leukemia.DATA$ID.Drug
-leukemia.DICT <- fimm.DICT[drop,]
+id <- leukemia.DATA[,"ID.Drug"] %in% fimm.DICT[,"FIMM.batch.ID"]
+al <- leukemia.DATA[,"Name.Drug"] %in% fimm.DICT[,"Aliases"]
+leukemia.DRUGS <- data.frame( Drug.ID=leukemia.DATA[,"ID.Drug"], Drug.Alias=leukemia.DATA[,"Name.Drug"], ID.in.Dict=id, Alias.in.Dict=al )
+remove(id, al)
+
+drop <- fimm.DICT[,"FIMM.batch.ID"] %in% leukemia.DATA[,"ID.Drug"]
+leukemia.DICT <- fimm.DICT[drop,]  # buid a dict only for leukemia drugs
 leukemia.DICT <- unique(leukemia.DICT)
-drop <- fimm.ANNO$CHEMBL_ID %in% leukemia.DICT$CHEMBL_ID
+drop <- fimm.ANNO[,"Pubchem_CID"] %in% leukemia.DICT[,"pubchem_CIDs"]
 leukemia.ANNO <- fimm.ANNO[drop,]
 
 leukemia.SUMMARY <- data.frame( Drugs.Count=length( unique(leukemia.DATA$Name.Drug) ), 
-                              Drugs.Annotated=length( unique(leukemia.ANNO$CHEMBL_ID) ),
+                              Drugs.Annotated=length( unique(leukemia.ANNO$KEGG_id) ),
+                              Anno.Count=length( leukemia.ANNO$KEGG_id ),
                               CL.Count=dim(leukemia.DATA)[2]-1, 
-                              CL.Annotated=0, 
-                              Anno.Count=length( leukemia.ANNO$CHEMBL_ID ),
-                              ATC.L1.Count=length( unique(leukemia.ANNO$Level1) ),
-                              ATC.L2.Count=length( unique(leukemia.ANNO$Level2) ),
-                              ATC.L3.Count=length( unique(leukemia.ANNO$Level3) ),
-                              ATC.L4.Count=length( unique(leukemia.ANNO$Level4) ),
-                              ATC.L5.Count=length( unique(leukemia.ANNO$Level5) ) 
+                              CL.Annotated=0                              
 )
 
 dataset.section.REPORT <- addTo( dataset.section.REPORT, newTable( leukemia.SUMMARY, "Data Set Summary" ) )
 dataset.section.REPORT <- addTo( dataset.section.REPORT, newTable( leukemia.matrix[76:80,1:5], "Initial Data Set with DSS values" ) )
 
 figure.file <- paste("class_distribution",".png",sep="")
-png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=2100, height=1100 )
-#x11(); 
-par(mfrow=c(2,2))
-for(k in 1:4){  # "k" for levels
-  count <- table(leukemia.ANNO[,k+1])
-  #counts <- as.data.frame(count)
-  #colnames(counts) <- c("Class", "Freq")
-  #counts$Class <- reorder(counts$Class, order(counts$Freq))
-  #ggplot(counts, aes(x=Class, y=Freq, fill=Class)) + geom_bar(stat="identity", position = "dodge")
-  barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab="\"Breast Data Set\"")
-}
-dev.off()
+# png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=2100, height=1100 )
+plotDrugClassesDistibution(bio.KEGG, category.name='Biological')
+plotDrugClassesDistibution(usp.KEGG, category.name='USP')
+plotDrugClassesDistibution(target.KEGG, category.name='Targets')
+plotDrugClassesDistibution(neo.KEGG, category.name='Antineoplastic: ')
+# dev.off()
 
 dataset.section.REPORT <- addTo( dataset.section.REPORT, newFigure(figure.file, "Category Distribution by ATC Levels") )
 

@@ -7,6 +7,7 @@
 #######################################################
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
+source('pipeline_sup.R')
 require(Nozzle.R1)
 
 REPORT <- newCustomReport( "FIMM Collection:", asEmph(" Summary.") )
@@ -15,7 +16,7 @@ REPORT <- newCustomReport( "FIMM Collection:", asEmph(" Summary.") )
 # ==================================== #
 
 read.csv(file="../datasets/KEGG_ATC.tsv", head=TRUE, sep="\t") -> kegg.ANNO
-read.csv(file="../datasets/drug_dictionary_FIMM.csv", head=TRUE, sep=",") -> fimm.DICT
+read.csv(file="../datasets/drug_dictionary_FIMM.csv", head=TRUE, sep="\t") -> fimm.DICT
 
 # Load four drug classifications from KEGG
 read.csv(file="../datasets/1_biological_classes_kegg.csv", head=TRUE, sep=",") -> bio.KEGG
@@ -48,8 +49,12 @@ fimm.ANNO <- kegg.ANNO[drop,-c(18,19,20)]
 
 fimm.ANNO <- unique(fimm.ANNO)  # remove duplicated rows
 fimm.SUMMARY$Annotations <- length(fimm.ANNO$Pubchem_CID)
-fimm.SUMMARY$PubChem.Annotated <- length( unique(fimm.ANNO[,"Pubchem_CID"]) )
+fimm.SUMMARY$KEGG.Annotated <- length( unique(fimm.ANNO[,"Pubchem_CID"]) )
 
+plotDrugClassesDistibution(bio.KEGG, category.name='Biological')
+plotDrugClassesDistibution(usp.KEGG, category.name='USP')
+plotDrugClassesDistibution(target.KEGG, category.name='Targets')
+plotDrugClassesDistibution(neo.KEGG, category.name='Antineoplastic: ')
 
 fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable( fimm.SUMMARY, "FIMM Collection Summary" ) )
 fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable( fimm.DICT[1:7,], "FIMM Dictionary" ) )
@@ -57,7 +62,7 @@ fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable(
 remove(drop)
 
 # Save R Objects to a file
-save(fimm.ANNO, fimm.DICT, fimm.SUMMARY, file = "FimmKEGGDrugAnnotations.RData")
+save(fimm.ANNO, fimm.DICT, fimm.SUMMARY, bio.KEGG, usp.KEGG, target.KEGG, neo.KEGG, file = "FimmKEGGDrugAnnotations.RData")
 
 REPORT <- addTo( REPORT, fimmcollection.section.REPORT );
 writeReport( REPORT, filename="../reports/FIMMCollectionKEGG/REPORT" )
