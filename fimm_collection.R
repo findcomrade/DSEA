@@ -7,20 +7,14 @@
 #######################################################
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
-# load("../datasets/merged_chembl.RData")
-
-library(vcd)
-library(grid)
-library(gplots)
-library(lattice)
-library(ggplot2)
-library(reshape2)
+source('pipeline_sup.R')
 require(Nozzle.R1)
 
 REPORT <- newCustomReport( "FIMM Collection:", asEmph(" Summary.") )
+
 ### Import Data Sets and Annotations ###
 # ==================================== #
-# merged_chembl_ATC_SCID -> atc.ANNO  # Chembl Drug Annotations
+
 read.csv(file="../datasets/KEGG_ATC.tsv", head=TRUE, sep="\t") -> atc.ANNO
 read.csv(file="../datasets/drug_dictionary_FIMM.csv", head=TRUE, sep=",") -> fimm.DICT
 remove(merged_chembl_ATC_SCID)  # cleanup
@@ -58,7 +52,7 @@ fimmcollection.section.REPORT <- addTo( fimmcollection.section.REPORT, newTable(
 remove(atc.ANNO, drop)
 
 # Save R Objects to a file
-save(fimm.ANNO, missing.ANNO, fimm.DICT, fimm.SUMMARY, file = "FimmATCDrugAnnotations.RData")
+save(fimm.ANNO, missing.ANNO, fimm.DICT, fimm.SUMMARY, file = "RData/FimmDrugAnnotations.RData")
 
 REPORT <- addTo( REPORT, fimmcollection.section.REPORT );
 writeReport( REPORT, filename="../reports/FIMMCollection/REPORT" )

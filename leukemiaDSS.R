@@ -7,103 +7,117 @@ library(gplots)
 library(lattice)
 library(ggplot2)
 library(reshape2)
-require(Nozzle.R1)
-
-REPORT <- newCustomReport( "DSEA:", asEmph(" Leukemia Project.") )
 
 ### Import Data Sets and Annotations ###
 # ==================================== #
-read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> leukemia.DATA
+read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> data.AML
 
 # Exclude a Sample (to check clustering results)
-#tmp <- which( colnames(leukemia.DATA) == "RPMI8226" )
-#leukemia.DATA <- leukemia.DATA[,-tmp]
+#tmp <- which( colnames(data.AML) == "RPMI8226" )
+#data.AML <- data.AML[,-tmp]
 
-load('FimmKEGGDrugAnnotations.RData')
+load('RData/FimmDrugAnnotations.RData')
 
 #########################################
 ###          DATA EXPLORATION       ####
 #########################################
 
-dataset.section.REPORT <- newSection( "Data Set Exploration" )
-
 # Convert the data to 'double matrix' and: 
-leukemia.matrix <- leukemia.DATA  # copy
-leukemia.matrix <- data.matrix(leukemia.matrix[,-c(1,2)])  # del 1st & 2nd rows 
-leukemia.transponsed <- t(leukemia.matrix)  # and transform
-colnames(leukemia.transponsed) <- leukemia.DATA[,2]  # assign colnames with drug names
-rownames(leukemia.matrix) <- leukemia.DATA[,2]  # assign colnames with drug names
+matrix.AML <- data.AML  # copy
+matrix.AML <- data.matrix(matrix.AML[,-c(1,2)])  # del 1st & 2nd rows 
+transponsed.AML <- t(matrix.AML)  # and transform
+colnames(transponsed.AML) <- data.AML[,2]  # assign colnames with drug names
+rownames(matrix.AML) <- data.AML[,2]  # assign colnames with drug names
 
 # if DSS == 0 for each cell line: "Anastrozole" only
-drop <- which(apply(leukemia.matrix,1,sum) == 0)
+drop <- which(apply(matrix.AML,1,sum) == 0)
 
 # We should trim those in order to run proper clustering
-leukemia.matrix <- leukemia.matrix[-drop,]
-leukemia.transponsed <- leukemia.transponsed[,-drop]
+matrix.AML <- matrix.AML[-drop,]
+transponsed.AML <- transponsed.AML[,-drop]
 
 # substitute NAs with 0
-nas <- is.na(leukemia.matrix); leukemia.matrix[nas] <- 0
-nas <- is.na(leukemia.transponsed); leukemia.transponsed[nas] <- 0
+nas <- is.na(matrix.AML); matrix.AML[nas] <- 0
+nas <- is.na(transponsed.AML); transponsed.AML[nas] <- 0
+
+
+# Clean (trim) batch.ids 
+data.AML$FIMM.Batch.ID <- data.AML[,"ID.Drug"]
+data.AML[,"ID.Drug"] <- strtrim(data.AML[,"ID.Drug"],10)
 
 # SCREEN SUMMARY
-id <- leukemia.DATA[,"ID.Drug"] %in% fimm.DICT[,"FIMM.batch.ID"]
-al <- leukemia.DATA[,"Name.Drug"] %in% fimm.DICT[,"Aliases"]
-leukemia.DRUGS <- data.frame( Drug.ID=leukemia.DATA[,"ID.Drug"], Drug.Alias=leukemia.DATA[,"Name.Drug"], ID.in.Dict=id, Alias.in.Dict=al )
+id <- data.AML[,"ID.Drug"] %in% dict.FIMM[,"FIMM.ID"]
+al <- data.AML[,"Name.Drug"] %in% dict.FIMM[,"Drug.Name"]
+drugs.AML <- data.frame( Drug.ID=data.AML[,"ID.Drug"], Drug.Name=data.AML[,"Name.Drug"], ID.in.Dict=id, Name.in.Dict=al )
 remove(id, al)
 
-drop <- fimm.DICT[,"FIMM.batch.ID"] %in% leukemia.DATA[,"ID.Drug"]
-leukemia.DICT <- fimm.DICT[drop,]  # buid a dict only for leukemia drugs
-leukemia.DICT <- unique(leukemia.DICT)
-drop <- fimm.ANNO[,"Pubchem_CID"] %in% leukemia.DICT[,"pubchem_CIDs"]
-leukemia.ANNO <- fimm.ANNO[drop,]
+drop <- dict.FIMM[,"FIMM.ID"] %in% data.AML[,"ID.Drug"]
+dict.AML <- dict.FIMM[drop,]  # buid a dict only for leukemia drugs
+dict.AML <- unique(dict.AML)
+drop <- which(annotations.FIMM[,"Pubchem_CID"] %in% dict.AML[,"PubChem.CID"])
+annotations.AML <- annotations.FIMM[drop,]  # buid annotation table only for leukemia drugs
+remove(dict.FIMM, annotations.FIMM)
 
-leukemia.SUMMARY <- data.frame( Drugs.Count=length( unique(leukemia.DATA$Name.Drug) ), 
-                              Drugs.Annotated=length( unique(leukemia.ANNO$KEGG_id) ),
-                              Anno.Count=length( leukemia.ANNO$KEGG_id ),
-                              CL.Count=dim(leukemia.DATA)[2]-1, 
-                              CL.Annotated=0                              
+summary.AML <- data.frame( 
+            Drugs.Count=length( unique(data.AML$Name.Drug) ), 
+            Drugs.Annotated=length( unique(annotations.AML$Pubchem_CID) ),
+            Anno.Count=length( annotations.AML$KEGG_id ),
+            CL.Count=dim(data.AML)[2]-1, 
+            CL.Annotated=0                              
 )
 
-dataset.section.REPORT <- addTo( dataset.section.REPORT, newTable( leukemia.SUMMARY, "Data Set Summary" ) )
-dataset.section.REPORT <- addTo( dataset.section.REPORT, newTable( leukemia.matrix[76:80,1:5], "Initial Data Set with DSS values" ) )
+# separate KEGG annotations:
+# take only those rows drugs that are in AML project
+drop <- which( bio.class.FIMM[,"KEGG_id"] %in% annotations.AML[,"KEGG_id"]  )
+bio.class.AML <- bio.class.FIMM[drop,]  # Biological Classes
+plotDrugClassesDistibution(bio.class.AML, category.name='Biological')  
 
-figure.file <- paste("class_distribution",".png",sep="")
-# png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=2100, height=1100 )
-plotDrugClassesDistibution(bio.KEGG, category.name='Biological')
-plotDrugClassesDistibution(usp.KEGG, category.name='USP')
-plotDrugClassesDistibution(target.KEGG, category.name='Targets')
-plotDrugClassesDistibution(neo.KEGG, category.name='Antineoplastic: ')
-# dev.off()
+drop <- which( target.class.FIMM[,"KEGG_id"] %in% annotations.AML[,"KEGG_id"]  )
+target.class.AML <- target.class.FIMM[drop,]  # Targets
+plotDrugClassesDistibution(target.class.AML, category.name='Targets')  
 
-dataset.section.REPORT <- addTo( dataset.section.REPORT, newFigure(figure.file, "Category Distribution by ATC Levels") )
+drop <- which( usp.class.FIMM[,"KEGG_id"] %in% annotations.AML[,"KEGG_id"]  )
+usp.class.AML <- usp.class.FIMM[drop,]  # Targets
+plotDrugClassesDistibution(usp.class.AML, category.name='USP')  
+
+drop <- which( neoplast.class.FIMM[,"KEGG_id"] %in% annotations.AML[,"KEGG_id"]  )
+neoplast.class.AML <- neoplast.class.FIMM[drop,]  # Targets
+plotDrugClassesDistibution(neoplast.class.AML, category.name='Antineoplastic') 
+
+drop <- which( atc.class.FIMM[,"KEGG_id"] %in% annotations.AML[,"KEGG_id"]  )
+atc.class.AML <- atc.class.FIMM[drop,]  # Targets
+plotDrugClassesDistibution(atc.class.AML, category.name='Antineoplastic') 
+
+
+## Correlations & Pairs()
+# qplot(x=Var1, y=Var2, data=melt(corr.sampl.AML), fill=value, geom="tile") + opts(axis.text.x = theme_text(angle = 90)) # <= unordered
+# < cell lines >
+corr.sampl.AML <- cor(matrix.AML, use="complete.obs")
+ccl <- hclust(as.dist(1-corr.sampl.AML), method="complete")
+heatmap.2(corr.sampl.AML, Rowv=as.dendrogram(ccl), Colv=as.dendrogram(ccl), trace="none", col=topo.colors(55), dendrogram='none')  colorpanel(40, "darkred", "orange", "yellow")
+
+pairs(~THP.1+KG.1+SH.2+Kasumi.1+ME.1+SIG.M5+AP1060+MUTZ2+HL60.ATCC+MOLM.13_2+SKM.1_2+MONO.MAC.6_2+
+        AP1060_2+Kasumi6+HL60.ATCC_2+HL60.TB_2+OCI.AML2+OCI.AML3+MOLM.16+ML.2+NB.4+GDM.1+UT7+NOMO.1_2+AML.193_2 ,data=data.AML)  # +UT7+NOMO.1_2+AML.193_2+MOLT.4_2
+
+pairs(~CCRF.CEM+K562+RPMI8226+SR+MOLT.4_2 ,data=data.AML)
+
+# < dugs >
+corr.drugs.AML <- cor(transponsed.AML, use="complete.obs")
+ccl <- hclust(as.dist(1-corr.drugs.AML), method="complete")
+heatmap.2(corr.drugs.AML, Rowv=as.dendrogram(ccl), Colv=as.dendrogram(ccl), trace="none", col=topo.colors(55), dendrogram='none')
 
 # HeatMap of the Response: modify color.map to highlight Drug Classes
-# color.map <- function(mol.biol) { if (mol.biol=="ALL1/AF4") "#FF0000" else "#0000FF" }
-# patientcolors <- unlist(lapply(esetSel$mol.bio, color.map))
+color.map <- function(mol.biol) { if (mol.biol=="ALL1/AF4") "#FF0000" else "#0000FF" }
+#patientcolors <- unlist(lapply(esetSel$mol.bio, color.map))
+heatmap.2(as.matrix(matrix.AML, na.rm=FALSE, Colv=F, scale='none'), col=topo.colors(75), Rowv=TRUE, na.rm=TRUE,
+          key=TRUE, symkey=FALSE, trace="none", cexRow=0.2, cexCol=0.5)  # ColSideColors=patientcolors
 
-#heatmap.2(as.matrix(leukemia.matrix, na.rm=FALSE, Colv=F, scale='none'), col=topo.colors(75), Rowv=TRUE, na.rm=TRUE,
-#          key=TRUE, symkey=FALSE, trace="none", cexRow=0.5, cexCol=0.5)  # ColSideColors=patientcolors
-
-# Full Set Density
-# plot( density( leukemia.transponsed, na.rm=TRUE), main = "Full Set", xlab = "DSS" )
-
-# Boxplot across drugs
-figure.file <- paste("drugs_boxplot",".png",sep="")
-png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=1700, height=600 )
-par(mfrow=c(1,1))
-boxplot(leukemia.transponsed, col=1:length(leukemia.transponsed), xlab = "A Drug", ylab = "DSS Value Distribution", names=NA)
-text(seq(1, length(rownames(leukemia.matrix)), by=1), -3, srt = 90, pos = 1, xpd = TRUE, labels=rownames(leukemia.matrix), cex=0.5)
-dev.off()
-
-dataset.section.REPORT <- addTo( dataset.section.REPORT, newFigure(figure.file, "DSS Value Distribution") )
 
 # CLUSTERING:
 # ==============
-cluster.section.REPORT <- newSection( "Cluster Analysis" )
-# (By "Pearson correlation as distance method")
 # Alailable methods for HCLUST: "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
-hr <- hclust(as.dist(1-cor(leukemia.transponsed, method="pearson")), method="complete")
-hc <- hclust(as.dist(1-cor(leukemia.matrix, method="spearman")), method="complete")  
+hr <- hclust(as.dist(1-corr.drugs.AML), method="complete")
+hc <- hclust(as.dist(1-corr.sampl.AML), method="complete")  
 
 # Cuts the tree and creates color vector for clusters
 mycl <- cutree(hr, h=max(hr$height)/1.5); 
@@ -112,32 +126,29 @@ mycolhc <- rainbow(length(unique(mycl)), start=0.1, end=0.9); mycolhc <- mycolhc
 myheatcol <- topo.colors(75)
 
 # Creates heatmap for entire data set where the obtained clusters are indicated in the color bar
-figure.file <- paste("heatmap",".png",sep="")
-png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=2500, height=2500 )
-heatmap.2(leukemia.matrix, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myheatcol, 
-          scale="row", trace="none", RowSideColors=mycolhc, cexRow=0.5, cexCol=0.5) 
-dev.off()
+heatmap.2(matrix.AML, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myheatcol, 
+          scale="row", trace="none", RowSideColors=mycolhc, cexRow=0.3, cexCol=0.5) 
 
-cluster.section.REPORT <- addTo( cluster.section.REPORT, newFigure(figure.file, "Heatmap") )
 
 # PROCESS OBTAINED CLUSTERS from "mycl"
 leukemia.ClUST$DrugName <- rownames(leukemia.ClUST)
 colnames(leukemia.ClUST) <- c("Cluster", "DrugName")
 
-# Add "CHEMBL_ID" from "leukemia.DICT" -> "leukemia.ClUST"
+# Add "CHEMBL_ID" from "dict.AML" -> "leukemia.ClUST"
 for(alias in leukemia.ClUST$DrugName){
-  if(sum(leukemia.DICT["Aliases"] == alias)){
-    leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"CHEMBL_ID"] <- leukemia.DICT[leukemia.DICT["Aliases"] == alias,"CHEMBL_ID"][1]
+  if(sum(dict.AML["Drug.Name"] == alias)){
+    leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"ChEMBL.ID"] <- dict.AML[dict.AML["Drug.Name"] == alias,"ChEMBL.ID"][1]
+    leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"PubChem.CID"] <- dict.AML[dict.AML["Drug.Name"] == alias,"PubChem.CID"][1]
   }
 }
 
-# Add "Cluster" from "leukemia.ClUST" -> "breat.ANNO"
-not.na <- !is.na(leukemia.ClUST["CHEMBL_ID"])
-for(id in leukemia.ANNO$CHEMBL_ID){
-  if(sum(leukemia.ClUST[not.na,"CHEMBL_ID"] == id)){
-    curr.id <- leukemia.ClUST[,"CHEMBL_ID"] == id
+# Add "Cluster" from "leukemia.ClUST" -> "annotations.AML"
+not.na <- !is.na(leukemia.ClUST["PubChem.CID"])
+for(id in annotations.AML$Pubchem_CID){
+  if(sum(leukemia.ClUST[not.na,"PubChem.CID"] == id)){
+    curr.id <- leukemia.ClUST[,"PubChem.CID"] == id
     curr.id <- curr.id & not.na
-    leukemia.ANNO[leukemia.ANNO[,"CHEMBL_ID"] == id,"Cluster"] <- leukemia.ClUST[curr.id,"Cluster"]
+    annotations.AML[annotations.AML[,"Pubchem_CID"] == id,"Cluster"] <- leukemia.ClUST[curr.id,"Cluster"]
   }
 }
 
@@ -150,26 +161,34 @@ for( clst in unique(leukemia.ClUST$Cluster) ){
 }
 colnames(leukemia.OUT) <- c("ClusterSym", "Cluster.Size", "Drug.List")
 
-cluster.section.REPORT <- addTo( cluster.section.REPORT, newTable( leukemia.OUT, "Drug List by Clusters" ) )
+# add cluster info to AML annotations
+drop <- which( target.class.AML$KEGG_id %in% annotations.AML$KEGG_id  )
+target.class.AML[drop,"Cluster"] <- annotations.AML[drop, "Cluster"]
 
-figure.file <- paste("drugs_clust_boxplot",".png",sep="")
-png( paste( "../reports/Leukemia/", figure.file, sep="" ), width=2500, height=2500 )
-# x11(); 
-par(mfrow=c(2,2))
-for(k in 1:4){
-  count <- table(leukemia.ANNO[,"Cluster"], leukemia.ANNO[,k+1])
-  barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab="\"Breast Data Set\"", legend=rownames(count))
-}
-par(mfrow=c(1,1)); dev.off() 
-cluster.section.REPORT <- addTo( cluster.section.REPORT, newFigure(figure.file, "Box Plot") )
+
+# layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE))
+# for(k in 1:3){  # "k" for levels
+#   count <- table(target.class.AML[,"Cluster"], target.class.AML[,k+1])    
+#     
+#   barplot(count, axisnames =TRUE, cex.axis = 0.8, cex.names = (0.99-k/10),
+#           col=1:length(ordered.data$Freq), main=paste("Target", " : Level ", k, sep=""), las=2)
+#   
+#   #counts <- as.data.frame(count); #colnames(counts) <- c("Class", "Freq"); #counts$Class <- reorder(counts$Class, order(counts$Freq))
+#   #ggplot(counts, aes(x=Class, y=Freq, fill=Class)) + geom_bar(stat="identity", position = "dodge")    
+# }
+
+# par(mfrow=c(2,2));
+# for(k in 1:4){
+#   count <- table(annotations.AML[,"Cluster"], annotations.AML[,k+1])
+#   barplot(count, col=1:length(count), main=paste("Category Distribution on Level ", k, sep=""), xlab="\"Breast Data Set\"", legend=rownames(count))
+# }
+# par(mfrow=c(1,1)); dev.off() 
 
 
 # Prints color key for cluster assignments. The numbers next to the color boxes correspond to the cluster numbers in 'mycl'
 # x11(height=6, width=2); names(mycolhc) <- names(mycl); barplot(rep(10, max(mycl)), col=unique(mycolhc[hr$labels[hr$order]]), horiz=T, names=unique(mycl[hr$order])) 
 
 # Save R Objects to a file
-save(leukemia.ClUST, leukemia.ANNO, leukemia.DATA, leukemia.DICT, leukemia.SUMMARY,
-     leukemia.matrix, leukemia.transponsed, leukemia.OUT, file = "leukemiaClust.RData")
+save(leukemia.ClUST, annotations.AML, data.AML, dict.AML, summary.AML,
+     matrix.AML, transponsed.AML, leukemia.OUT, file = "RData/leukemiaClust.RData")
 
-REPORT <- addTo( REPORT, fimmcollection.section.REPORT, dataset.section.REPORT, cluster.section.REPORT  );
-writeReport( REPORT, filename="../reports/Leukemia/REPORT" )

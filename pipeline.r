@@ -13,30 +13,29 @@ library(gplots)
 library(ggplot2)
 library(RJSONIO)
 library(reshape2)
-require(Nozzle.R1)
 
 # 1. Upload a New Screen
-read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> leukemia.DATA
+read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> data.AML
 
 # 2. Identify (a) top Sensitive and (b) Resistant Drugs
 cell.line <- "SR"
 
-leukemia.matrix <- leukemia.DATA
-leukemia.matrix <- data.matrix(leukemia.matrix[,-c(1,2)])  # del 1st & 2nd rows 
-rownames(leukemia.matrix) <- leukemia.DATA[,2]  # assign colnames with drug names
-drop <- which(apply(leukemia.matrix,1,sum) == 0)
-leukemia.matrix <- leukemia.matrix[-drop,]
-nas <- is.na(leukemia.matrix); leukemia.matrix[nas] <- 0
+matrix.AML <- data.AML
+matrix.AML <- data.matrix(matrix.AML[,-c(1,2)])  # del 1st & 2nd rows 
+rownames(matrix.AML) <- data.AML[,2]  # assign colnames with drug names
+drop <- which(apply(matrix.AML,1,sum) == 0)
+matrix.AML <- matrix.AML[-drop,]
+nas <- is.na(matrix.AML); matrix.AML[nas] <- 0
 
-drugSensitivity(leukemia.matrix, cell.line)
-plot( density( leukemia.matrix[,cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
-hist(leukemia.matrix[,cell.line])
+drugSensitivity(matrix.AML, cell.line)
+plot( density( matrix.AML[,cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
+hist(matrix.AML[,cell.line])
 
-drugs.sensitive <- topSensitive(leukemia.matrix, cell.line, 19)
-drugs.resistant <- topResistant(leukemia.matrix, cell.line)
+drugs.sensitive <- topSensitive(matrix.AML, cell.line, 19)
+drugs.resistant <- topResistant(matrix.AML, cell.line)
 
 # 3. Upload corresponding data set wit clusters
-load('leukemiaClust.RData')
+load('RData/leukemiaClust.RData')
 
 # 4. Push Both Sets for Enrichment
 # That is to verify that most of sensitive drugs 

@@ -14,16 +14,18 @@ drugSensitivity <- function(dss.matrix, cell.line, cut=25){
 plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
   
   # par(mfrow=c(2,2))
-  layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE))
-  for(k in 1:3){  # "k" for levels
+  layout(matrix(c(1,1,2,2), 2, 2, byrow = TRUE))
+  for(k in 1:2){  # "k" for levels
     count <- table(drug.classes[,k+1])    
-    ordered.data<-data.frame(count)
-    ordered.data<-ordered.data[ order( ordered.data$Freq ), ]
+    ordered.data <- data.frame(count)
+    ordered.data <- ordered.data[ order( ordered.data$Freq, decreasing = TRUE ), ]
     
-    print( sum(ordered.data$Freq) )
+    # get rid of zero-freq values
+    # i have no idea why all the categories appear in the table!!!
+    ordered.data <- ordered.data[ ordered.data$Freq > 0 ,]
     
-    barplot(ordered.data$Freq, axisnames =TRUE, names.arg=ordered.data$Var1, cex.axis = 0.8, cex.names = (0.99-k/10),
-            col=1:length(ordered.data$Freq), main=paste(category.name, " Distribution on Level ", k, sep=""), las=2)
+    barplot(ordered.data$Freq, axisnames =TRUE, names.arg=ordered.data$Var1, cex.axis = 0.8, cex.names = 0.75,
+            col=1:length(ordered.data$Freq), main=paste(category.name, " : Level ", k, sep=""), las=2)
     
     #counts <- as.data.frame(count); #colnames(counts) <- c("Class", "Freq"); #counts$Class <- reorder(counts$Class, order(counts$Freq))
     #ggplot(counts, aes(x=Class, y=Freq, fill=Class)) + geom_bar(stat="identity", position = "dodge")    
@@ -109,4 +111,36 @@ dropJSON <- function(clusters.data, path="circular.json"){
   }
   cat("]", "\n}")
   sink()
+}
+
+cleanUpFactors <- function(my.frame){
+  # This function iterates on frame's columns
+  # If col is a factor we reduce the number of levels for the factor
+  # to only those that currently appear in a list (in the col).
+  # Also all NAs are substituted with 'undefined'
+  
+  for(col in 1:ncol(my.frame)){
+    if(is.factor(my.frame[,col])){
+      # clean levels
+      my.frame[,col] <- factor(my.frame[,col])
+      # add a new level
+      my.frame[,col] <- factor(my.frame[,col], levels = c(levels(my.frame[,col]), "undefined"))
+      my.frame[is.na( my.frame[,col] ),col] <- "undefined"      
+    }
+  }
+  
+  return(my.frame)
+}
+
+fulfillClassFrame <- function(class.frame, ids.list){
+  # Takes a frame with drug classes assosiated with 
+  # Kegg ids and accomplish the frame with missing ids
+  # from annotations.FIMM. 
+  len <- length(ids.list)
+  new.frame <- data.frame( rep(NA,len), rep(NA,len), rep(NA,len),
+                             rep(NA,len), rep(NA,len), ids.list   )
+  colnames(new.frame) <- colnames(class.frame)
+  new.frame <- rbind(class.frame, new.frame)  
+  
+  return(new.frame)
 }

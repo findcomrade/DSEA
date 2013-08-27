@@ -6,23 +6,23 @@ library(ggplot2)
 library(reshape2)
 require(Nozzle.R1)
 
-# load("../datasets/sanger.RData")
-# load("../datasets/oregon.RData")
+ load("../datasets/sanger.RData")
+ load("../datasets/oregon.RData")
 # load("../datasets/merged_chembl.RData")
 
 ### Import Data Sets and Annotations ###
 # ==================================== #
 # merged_chembl_ATC_SCID -> chembl.ANNO  # Chembl Drug Annotations
 # 
-# data.frame(exprs(sangerSet)) -> sanger.DATA
-# data.frame(exprs(xprOregonSet)) -> oregon.DATA
+data.frame(exprs(sangerSet)) -> sanger.DATA
+data.frame(exprs(xprOregonSet)) -> oregon.DATA
 # 
 # read.csv(file="../datasets/fimm_chembl_dict.csv", head=TRUE, sep=",") -> fimm.DICT
-# read.csv(file="../datasets/sanger_chembl_dict.csv", head=TRUE, sep=",") -> sanger.DICT
-# read.csv(file="../datasets/oregon_chembl_dict.csv", head=TRUE, sep=",") -> oregon.DICT
-#
-# pData(sangerSet) -> sanger.sample.ANNO
-# pData(xprOregonSet) -> oregon.sample.ANNO
+read.csv(file="../datasets/sanger_chembl_dict.csv", head=TRUE, sep=",") -> sanger.DICT
+read.csv(file="../datasets/oregon_chembl_dict.csv", head=TRUE, sep=",") -> oregon.DICT
+
+pData(sangerSet) -> sanger.sample.ANNO
+pData(xprOregonSet) -> oregon.sample.ANNO
 
 # cleanup
 # remove(sangerSet, xprOregonSet, merged_chembl_ATC_SCID)
