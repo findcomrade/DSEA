@@ -36,7 +36,7 @@ buildEnrichmentTable <- function(cell.line){
 
 pValue <- function(sensitive.target, sensitive.reference, overlap){
   # Performs Fisher's exact test for testing the null of independence of rows and columns;
-  #sensitive.target <- 9;  sensitive.reference <- 20;  overlap <- 6;
+  # sensitive.target <- 9;  sensitive.reference <- 20;  overlap <- 6;
   if (!overlap){
     return (0)
   }

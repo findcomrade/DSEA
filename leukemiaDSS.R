@@ -3,18 +3,20 @@ source('pipeline_sup.R')
 
 library(vcd)
 library(grid)
+library(Hmisc)
 library(gplots)
 library(lattice)
 library(ggplot2)
 library(reshape2)
+library(RJSONIO)
 
 ### Import Data Sets and Annotations ###
 # ==================================== #
 read.csv(file="../datasets/all_leukemia_cl_june_13_disha_astrid.csv", head=TRUE, sep=",") -> data.AML
 
 # Exclude a Sample (to check clustering results)
-#tmp <- which( colnames(data.AML) == "RPMI8226" )
-#data.AML <- data.AML[,-tmp]
+tmp <- which( colnames(data.AML) == "THP.1" )
+data.AML <- data.AML[,-tmp]
 
 load('RData/FimmDrugAnnotations.RData')
 
@@ -93,18 +95,19 @@ plotDrugClassesDistibution(atc.class.AML, category.name='Antineoplastic')
 # qplot(x=Var1, y=Var2, data=melt(corr.sampl.AML), fill=value, geom="tile") + opts(axis.text.x = theme_text(angle = 90)) # <= unordered
 # < cell lines >
 corr.sampl.AML <- cor(matrix.AML, use="complete.obs")
+#corr.sampl.AML <- corr.sampl.AML[nrow(corr.sampl.AML):1,]
 ccl <- hclust(as.dist(1-corr.sampl.AML), method="complete")
-heatmap.2(corr.sampl.AML, Rowv=as.dendrogram(ccl), Colv=as.dendrogram(ccl), trace="none", col=topo.colors(55), dendrogram='none')  colorpanel(40, "darkred", "orange", "yellow")
+heatmap.2(corr.sampl.AML, Rowv=TRUE, Colv=TRUE, trace="none", col=colorpanel(40, "blue", "white", "red"), dendrogram='none', revC=TRUE)  
 
-pairs(~THP.1+KG.1+SH.2+Kasumi.1+ME.1+SIG.M5+AP1060+MUTZ2+HL60.ATCC+MOLM.13_2+SKM.1_2+MONO.MAC.6_2+
-        AP1060_2+Kasumi6+HL60.ATCC_2+HL60.TB_2+OCI.AML2+OCI.AML3+MOLM.16+ML.2+NB.4+GDM.1+UT7+NOMO.1_2+AML.193_2 ,data=data.AML)  # +UT7+NOMO.1_2+AML.193_2+MOLT.4_2
+# pairs(~THP.1+KG.1+SH.2+Kasumi.1+ME.1+SIG.M5+AP1060+MUTZ2+HL60.ATCC+MOLM.13_2+SKM.1_2+MONO.MAC.6_2+
+  #      AP1060_2+Kasumi6+HL60.ATCC_2+HL60.TB_2+OCI.AML2+OCI.AML3+MOLM.16+ML.2+NB.4+GDM.1+UT7+NOMO.1_2+AML.193_2 ,data=data.AML)  # +UT7+NOMO.1_2+AML.193_2+MOLT.4_2
 
-pairs(~CCRF.CEM+K562+RPMI8226+SR+MOLT.4_2 ,data=data.AML)
+# pairs(~CCRF.CEM+K562+RPMI8226+SR+MOLT.4_2 ,data=data.AML)
 
 # < dugs >
 corr.drugs.AML <- cor(transponsed.AML, use="complete.obs")
 ccl <- hclust(as.dist(1-corr.drugs.AML), method="complete")
-heatmap.2(corr.drugs.AML, Rowv=as.dendrogram(ccl), Colv=as.dendrogram(ccl), trace="none", col=topo.colors(55), dendrogram='none')
+heatmap.2(corr.drugs.AML, Rowv=as.dendrogram(ccl), Colv=as.dendrogram(ccl), trace="none", col=colorpanel(40, "blue", "white", "red"), dendrogram='none', revC=TRUE, cexCol=0.5, cexRow=0.25)
 
 # HeatMap of the Response: modify color.map to highlight Drug Classes
 color.map <- function(mol.biol) { if (mol.biol=="ALL1/AF4") "#FF0000" else "#0000FF" }
@@ -128,6 +131,13 @@ myheatcol <- topo.colors(75)
 # Creates heatmap for entire data set where the obtained clusters are indicated in the color bar
 heatmap.2(matrix.AML, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myheatcol, 
           scale="row", trace="none", RowSideColors=mycolhc, cexRow=0.3, cexCol=0.5) 
+
+
+halfway <- hclustToTree(hr, mycl)
+jsonTree <- toJSON(halfway)
+sink('/home/comrade/Projects/d3.v3/tree.json')
+cat( substr(jsonTree, 4, nchar(jsonTree)-3) )
+sink()
 
 
 # PROCESS OBTAINED CLUSTERS from "mycl"

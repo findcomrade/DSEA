@@ -26,6 +26,7 @@ rownames(matrix.AML) <- data.AML[,2]  # assign colnames with drug names
 drop <- which(apply(matrix.AML,1,sum) == 0)
 matrix.AML <- matrix.AML[-drop,]
 nas <- is.na(matrix.AML); matrix.AML[nas] <- 0
+remove(nas, drop)
 
 drugSensitivity(matrix.AML, cell.line)
 plot( density( matrix.AML[,cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
@@ -37,19 +38,20 @@ drugs.resistant <- topResistant(matrix.AML, cell.line)
 # 3. Upload corresponding data set wit clusters
 load('RData/leukemiaClust.RData')
 
+
 # 4. Push Both Sets for Enrichment
 # That is to verify that most of sensitive drugs 
 # from a set tend to appear in the same cluster
-
-enrichment.table <- buildEnrichment(leukemia.ClUST, drugs.sensitive, drugs.resistant)
+enrichment.table <- buildEnrichmentD(leukemia.ClUST, drugs.sensitive, drugs.resistant)
 
 # Add information (new col) to 'leukemia.ClUST' about
 # which drugs to highlight: sensitive or resistant
 is.top <- leukemia.ClUST[,"DrugName"] %in% drugs.sensitive$DrugName # sensit
+
 is.bot <- leukemia.ClUST[,"DrugName"] %in% drugs.resistant$DrugName # resist
 leukemia.ClUST[,"isTop"] <- 0 
 leukemia.ClUST[is.top,"isTop"] <- 1
 leukemia.ClUST[is.bot,"isTop"] <- -1
 
-dropJSON(leukemia.ClUST)
+dropJSON(leukemia.ClUST, path='/home/comrade/Projects/d3.v3/circular.json')
 
