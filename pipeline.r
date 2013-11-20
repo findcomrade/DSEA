@@ -5,6 +5,8 @@
 # (dmitrii.bychkov@helsinki.fi)
 #######################################################
 
+
+
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 source('pipeline_sup.R')
 
@@ -54,4 +56,4 @@ leukemia.ClUST[is.top,"isTop"] <- 1
 leukemia.ClUST[is.bot,"isTop"] <- -1
 
 dropJSON(leukemia.ClUST, path='/home/comrade/Projects/d3.v3/circular.json')
-
+dropCirclePackingJSON(leukemia.ClUST, path='/home/comrade/Projects/d3.v3/circle_packing.json')

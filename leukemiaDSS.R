@@ -5,6 +5,7 @@ library(vcd)
 library(grid)
 library(Hmisc)
 library(gplots)
+library(stringr)
 library(lattice)
 library(ggplot2)
 library(reshape2)
@@ -56,6 +57,7 @@ remove(id, al)
 drop <- dict.FIMM[,"FIMM.ID"] %in% data.AML[,"ID.Drug"]
 dict.AML <- dict.FIMM[drop,]  # buid a dict only for leukemia drugs
 dict.AML <- unique(dict.AML)
+dict.AML$Drug.Name <- lapply(dict.AML[,"Drug.Name"],str_trim)
 drop <- which(annotations.FIMM[,"Pubchem_CID"] %in% dict.AML[,"PubChem.CID"])
 annotations.AML <- annotations.FIMM[drop,]  # buid annotation table only for leukemia drugs
 remove(dict.FIMM, annotations.FIMM)
@@ -143,14 +145,20 @@ sink()
 # PROCESS OBTAINED CLUSTERS from "mycl"
 leukemia.ClUST$DrugName <- rownames(leukemia.ClUST)
 colnames(leukemia.ClUST) <- c("Cluster", "DrugName")
+leukemia.ClUST$DrugName <- lapply(leukemia.ClUST[,"DrugName"],str_trim)
 
 # Add "CHEMBL_ID" from "dict.AML" -> "leukemia.ClUST"
 for(alias in leukemia.ClUST$DrugName){
   if(sum(dict.AML["Drug.Name"] == alias)){
     leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"ChEMBL.ID"] <- dict.AML[dict.AML["Drug.Name"] == alias,"ChEMBL.ID"][1]
     leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"PubChem.CID"] <- dict.AML[dict.AML["Drug.Name"] == alias,"PubChem.CID"][1]
+    leukemia.ClUST[leukemia.ClUST[,"DrugName"] == alias,"Class"] <- dict.AML[dict.AML["Drug.Name"] == alias,"Target"][1]
   }
 }
+
+# Set 'undefined' for NAs Classes
+drop <- which(is.na(leukemia.ClUST$Class))
+leukemia.ClUST[drop,"Class"] <- "undefined"
 
 # Add "Cluster" from "leukemia.ClUST" -> "annotations.AML"
 not.na <- !is.na(leukemia.ClUST["PubChem.CID"])

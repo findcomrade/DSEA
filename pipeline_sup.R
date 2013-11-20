@@ -1,3 +1,7 @@
+# library(XLConnect)
+library(ggplot2)
+library(reshape)
+
 drugSensitivity <- function(dss.matrix, cell.line, cut=25){
   # Looks for a col named as "cell.line", 
   # orders values and  generates a barplot
@@ -7,8 +11,8 @@ drugSensitivity <- function(dss.matrix, cell.line, cut=25){
     
   col = c("mistyrose", "lightblue")
   myclorz <- ifelse(ordered.data %in% top.drugs, col[1], col[2])
-  barplot( ordered.data, axisnames =TRUE, names.arg=names(ordered.data), horiz=FALSE, col= myclorz, las=2, cex.axis = 0.8, cex.names = 0.3,
-                space=1, axis.lty=1, lwd=2, xaxs="i", yaxs="i", ylab="DSS", main =paste("Drug Sensitivity for \"", cell.line, "\" Cell Line", sep="") )
+  barplot( ordered.data, axisnames =TRUE, names.arg=names(ordered.data), horiz=FALSE, col= myclorz, las=2, cex.axis = 0.8, cex.names = 0.25,
+                space=1, axis.lty=1, lwd=2, xaxs="i", yaxs="i", ylab="DSS", main =paste("Drug Sensitivity for \"", cell.line, "\" ", sep="") )
 }
 
 plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
@@ -18,14 +22,14 @@ plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
   for(k in 1:2){  # "k" for levels
     count <- table(drug.classes[,k+1])    
     ordered.data <- data.frame(count)
-    ordered.data <- ordered.data[ order( ordered.data$Freq, decreasing = TRUE ), ]
+    ordered.data <- ordered.data[ order( ordered.data$Freq, decreasing = FALSE ), ]
     
     # get rid of zero-freq values
     # i have no idea why all the categories appear in the table!!!
     ordered.data <- ordered.data[ ordered.data$Freq > 0 ,]
-    
-    barplot(ordered.data$Freq, axisnames =TRUE, names.arg=ordered.data$Var1, cex.axis = 0.8, cex.names = 0.75,
-            col=1:length(ordered.data$Freq), main=paste(category.name, " : Level ", k, sep=""), las=2)
+    par(mar=c(5, 22, 4, 2) + 0.1)
+    barplot(ordered.data$Freq, axisnames =TRUE, names.arg=ordered.data$Var1, cex.axis = 1.2, cex.names = 1.2,
+            col=1:length(ordered.data$Freq), main=paste(category.name, " : Level ", k, sep=""), las=2, horiz=TRUE)
     
     #counts <- as.data.frame(count); #colnames(counts) <- c("Class", "Freq"); #counts$Class <- reorder(counts$Class, order(counts$Freq))
     #ggplot(counts, aes(x=Class, y=Freq, fill=Class)) + geom_bar(stat="identity", position = "dodge")    
@@ -33,7 +37,7 @@ plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
   
 }
 
-topSensitive <- function(dss.matrix, cell.line, dss.threshold=25){
+topSensitive <- function(dss.matrix, cell.line, dss.threshold=21){
   # Returns a list of top sensitive drugs for a given cell line
   
   dss.values <- as.data.frame( dss.matrix[,cell.line] )
@@ -42,7 +46,7 @@ topSensitive <- function(dss.matrix, cell.line, dss.threshold=25){
   colnames(dss.values) <- c(cell.line, "DrugName")
   
   # trim items with dss < threshold
-  drugs.top <- as.data.frame(dss.values[dss.values[,cell.line] > dss.threshold,])
+  drugs.top <- as.data.frame(dss.values[ dss.values[,cell.line] > dss.threshold & !is.na(dss.values[,cell.line]), ])
   drugs.top <- drugs.top[order(drugs.top[,cell.line], decreasing=TRUE),]  # order drugs 
   
   return (drugs.top)
@@ -85,8 +89,8 @@ pValue <- function(sensitive.target, sensitive.reference, overlap, total.count){
 # Enrichment: Drug-based path
 buildEnrichmentD <- function(cluster.data, drugs.sensitive, drugs.resistant){
   enrichment.table <- data.frame(Cluster=character(), Cluster.Size=numeric(), DataSet.Size=numeric(), 
-                                 Sensit.Overlap=numeric(), Sensit.Total=numeric(), pVal.S=numeric(),
-                                 Resist.Overlap=numeric(), Resist.Total=numeric(), pVal.R=numeric(), stringsAsFactors=FALSE)
+                                 Sensit.Overlap=numeric(), Sensit.Total=numeric(), pVal.S=numeric(), stringsAsFactors=FALSE)
+                                 #Resist.Overlap=numeric(), Resist.Total=numeric(), pVal.R=numeric(), 
   
   for(cluster in unique(cluster.data$Cluster)){
     cluster.set <- cluster.data[ cluster.data[,"Cluster"] == cluster, "DrugName" ]
@@ -105,17 +109,17 @@ buildEnrichmentD <- function(cluster.data, drugs.sensitive, drugs.resistant){
     
     resistant.count <- length(drugs.resistant$DrugName)
     resistant.overlap <- sum(drugs.resistant$DrugName %in% cluster.set)
-    enrichment.table[cluster,"Resist.Overlap"] <- resistant.overlap
-    enrichment.table[cluster,"Resist.Total"] <- length(drugs.resistant$DrugName)
-    enrichment.table[cluster,"pVal.R"] <- pValue(resistant.count, cluster.size, resistant.overlap, total.size)
+    #enrichment.table[cluster,"Resist.Overlap"] <- resistant.overlap
+    #enrichment.table[cluster,"Resist.Total"] <- length(drugs.resistant$DrugName)
+    #enrichment.table[cluster,"pVal.R"] <- pValue(resistant.count, cluster.size, resistant.overlap, total.size)
   }
   enrichment.table$pVal.Sensitive.Adj <- p.adjust(enrichment.table$pVal.S, "bonferroni" )
-  enrichment.table$pVal.Resistant.Adj <- p.adjust(enrichment.table$pVal.R, "bonferroni" )
+  #enrichment.table$pVal.Resistant.Adj <- p.adjust(enrichment.table$pVal.R, "bonferroni" )
   return (enrichment.table)
 }
 
 # Enrichment: Cell-Line-based path
-buildEnrichmentCL <- function(dss.db, dss.new, sample.name){
+buildEnrichmentCL <- function(dss.db, dss.new, sample.name, dss.cutoff=25){
   # 'target.drugs' - top sensitive drugs (or resistant) of a sample for enrichment;
   # 'dss.db' - already processed and clustered data;
   # 'dss.new' - dss values for new samples;
@@ -123,7 +127,7 @@ buildEnrichmentCL <- function(dss.db, dss.new, sample.name){
   # obviously, it have to exist in dss.new, but NOT in dss.db.
   
   drugs.in.db <- length(  unique( rownames(dss.db) )  )
-  target.drugs <- topSensitive(dss.new, sample.name)
+  target.drugs <- topSensitive(dss.new, sample.name, dss.cutoff)
   target.sens.count <- length( unique(target.drugs$DrugName) )
   
   Cell.Line <- c();  top.count <- c();  screened.count <- c();  SCORE <- c(); p.value <- c();
@@ -179,6 +183,20 @@ correlationTable <- function(dss.db, dss.sample, sample.name){
 # Enriched Cell Lines
 getEnrichedCellLines <- function(corr.table, enrich.table, r.min, p.max){
   corr.cl <- corr.table[ corr.table$Corr > r.min, c("Cell.Line", "Corr") ]
+  enrich.cl <- enrich.table[ enrich.table$bf.correction < p.max , 1:7]
+  ov <- which( enrich.cl$Cell.Line %in% corr.cl$Cell.Line )
+  
+  if(length(ov) == 0){
+    return(0)  
+  }
+  
+  result.table <- data.frame(enrich.cl[ov,])
+  result.table$Corr <- NA
+  for(line in result.table$Cell.Line){
+    result.table[result.table[, "Cell.Line"] == line, "Corr"] <- corr.cl[ corr.cl[,"Cell.Line"] == line ,"Corr"]
+  }
+  
+  return(result.table)
 }
 
 dropJSON <- function(clusters.data, path="circular.json"){
@@ -204,6 +222,33 @@ dropJSON <- function(clusters.data, path="circular.json"){
     }
     
     if( cluster == max(unique(clusters.data$Cluster)) ){ cat("\t]", "\n\t}") }
+    else { cat("\t]", "\n\t},") }
+  }
+  cat("]", "\n}")
+  sink()
+}
+
+dropCirclePackingJSON <- function(clusters.data, path="circle_packing.json"){
+  
+  sink(path)
+  cat("{", "\n\t\"name\": \"Data Set\",", "\n\t\"children\": [\n")  # push root node
+  
+  for (cluster in unique(clusters.data$Cluster)){  # Over Clusters
+    cat("\t{", "\n\t\"name\": ", paste("\"Cluster ", cluster, "\",", sep=""), "\n\t\"children\": [\n")
+    
+    last.index <- length(clusters.data[clusters.data[,"Cluster"] == cluster,"SampleName"])
+    
+    for(drug in clusters.data[clusters.data[,"Cluster"] == cluster,"SampleName"]){  # Over Drugs
+  
+      is.top <- clusters.data[clusters.data[,"SampleName"] == drug & clusters.data[,"Cluster"] == cluster,"isTop"]  
+      if( drug == clusters.data[clusters.data[,"Cluster"] == cluster,"SampleName"][last.index] ){
+        cat("\t\t{", "\t\"name\": ", paste("\"",drug, "\", ",  "\"size\": ", is.top, sep=""), " } \n")    
+      } else{ 
+        cat("\t\t{", "\t\"name\": ", paste("\"",drug, "\", ", "\"size\": ", is.top, sep=""), " }, \n") 
+      }
+    }
+    
+    if( cluster == max( unique(clusters.data$Cluster) ) ){ cat("\t]", "\n\t}") }
     else { cat("\t]", "\n\t},") }
   }
   cat("]", "\n}")
