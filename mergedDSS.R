@@ -13,14 +13,14 @@ library(RJSONIO)
 ### Import Data Sets and Annotations ###
 # ==================================== #
 read.csv(file="../datasets/merged_dss_new.csv", head=TRUE, sep="\t") -> data.MERGED
-# read.csv(file="../datasets/disha.csv", head=TRUE, sep="\t") -> data.MERGED
+#read.csv(file="../datasets/leukemia_all_celllines_data_DSS.csv", head=TRUE, sep="\t") -> data.MERGED
 
 # read.csv(file="~/Desktop/current/DSS2_all_SK_SH_4_LK.csv", head=TRUE, sep=",") -> data.MERGED
 # read.csv(file="../datasets/merged_dss.csv", head=TRUE, sep=",") -> data.MERGED
 
 
 # Exclude a Sample (to check clustering results)
-tmp <- which( colnames(data.MERGED) == "primary_culture_270513_PCA2_ROCK" ) # X784_1 HUB_1613_270513_culture1_rock
+tmp <- which( colnames(data.MERGED) == "SR" ) # X784_1 HUB_1613_270513_culture1_rock
 data.MERGED <- data.MERGED[,-tmp]
 
 load('RData/FimmDrugAnnotations.RData')
@@ -232,5 +232,6 @@ target.class.AML[drop,"Cluster"] <- annotations.MERGED[drop, "Cluster"]
 # Save R Objects to a file
 save(tree.DRUGS, tree.SAMPLES, annotations.MERGED, data.MERGED, dict.MERGED, summary.MERGED,
      matrix.MERGED, transponsed.MERGED, leukemia.OUT, target.class.AML, neoplast.class.AML, file = "RData/leukemiaClust.RData")
+save(tree.DRUGS, tree.SAMPLES, data.MERGED, matrix.MERGED, transponsed.MERGED, leukemia.OUT, file = "RData/leukemiaClust.RData")
 
 dev.off()

@@ -1,3 +1,6 @@
+figures/
+Results/
+RData/
 *.RData
 *.Rdata
 *.Rhistory

@@ -7,7 +7,7 @@ library(reshape)
 
 
 
-DSS_table_wb <- loadWorkbook ("/home/comrade/Desktop/Merged_drug_screening_data.xlsx")
+DSS_table_wb <- loadWorkbook ("../datasets/Merged_drug_screening_data.xlsx")
 DSS_tbl <- readWorksheet(DSS_table_wb, sheet=1, header = TRUE)
 #Filter out drugs screened over a few cell lines
 filt <- apply(as.matrix(DSS_tbl[,-c(1:5)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
@@ -25,6 +25,7 @@ mat <-  table(xpr$X1,fct)
 df <-  prop.table(mat,1)
 df <- df[,3:1]
 df <- df[order(df[,1],decreasing=FALSE),]
+
 #Order of drug names. You can replace this order with the drug list you are querrying.
 levels_order <- rownames(df)
 df.m <- melt(df)

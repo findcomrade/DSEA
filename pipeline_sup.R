@@ -2,6 +2,7 @@
 library(ggplot2)
 library(reshape)
 
+
 drugSensitivity <- function(dss.matrix, cell.line, cut=25){
   # Looks for a col named as "cell.line", 
   # orders values and  generates a barplot
@@ -86,6 +87,62 @@ pValue <- function(sensitive.target, sensitive.reference, overlap, total.count){
   return ( as.numeric(test["p.value"]) )
 }
 
+drugRankedList <- function(dss.matrix, sample){
+  #
+  # Extracts DSS values from dss.matrix for a given sample.
+  #
+  # Input: 
+  #   dss.matrix - double matrix with Drugs in Rows & Samples in Columns;
+  #   sample     - a string with sample name (e.g. "SR").
+  
+  col.header <- paste(sample, "DSS", sep=".")                                    # column name
+  
+  dss.values <- as.data.frame( dss.matrix[,sample] )
+  rownames(dss.values) <- rownames(dss.matrix) 
+  dss.values$DrugName <- rownames(dss.matrix) 
+  colnames(dss.values) <- c(col.header, "DrugName")
+  
+  ranked.list <- as.data.frame(dss.values[ !is.na(dss.values[,col.header]), ])   # trim NAs
+  ranked.list <- ranked.list[order(ranked.list[,col.header], decreasing=TRUE),]  # order Drugs
+  
+  return (ranked.list)
+}
+
+enrichmentScore <- function(target.list, reference.list){
+  #
+  # Computes enrichment score of target.list in reference.list.
+  
+  permutations     <- match(target.list[,"DrugName"], reference.list[,"DrugName"], nomatch=0)
+  tag.indicator    <- sign(permutations)
+  no.tag.indicator <- 1 - tag.indicator 
+  
+  target.size    <- length(target.list[,"DrugName"]) 
+  reference.size <- length(reference.list[,"DrugName"])
+  Nm             <- target.size - reference.size 
+  
+  shift.size   <- seq(1:target.size) - permutations
+  
+  dss.vector   <- target.list[,1] * shift.size # extract dss scores vector
+  sum.dss.tag  <- sum(dss.vector[tag.indicator == 1])
+  norm.tag     <- 1.0/sum.dss.tag
+  norm.no.tag  <- 1.0/sum.dss.tag
+  
+  running.sum <- cumsum(tag.indicator * dss.vector * norm.tag - no.tag.indicator * dss.vector * norm.no.tag)      
+  
+  plot(running.sum)
+}
+
+enrichmentStatistics <- function(target.list, reference.list){
+  #
+  # Collects enrichment statistics in a teble
+  # 
+  
+  enrichment.stat <- data.frame(Ref.Set=character(), EScore=numeric(), p.Val=numeric(), stringsAsFactors=FALSE)
+  
+  
+}
+
+  
 # Enrichment: Drug-based path
 buildEnrichmentD <- function(cluster.data, drugs.sensitive, drugs.resistant){
   enrichment.table <- data.frame(Cluster=character(), Cluster.Size=numeric(), DataSet.Size=numeric(), 

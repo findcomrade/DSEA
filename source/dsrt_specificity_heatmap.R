@@ -2,32 +2,52 @@ library(ggplot2)
 library(XLConnect)
 library(reshape)
 library(grid)
+library(Hmisc)
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 
-#Extract the top sensitive drugs for sample 
-current_sample <- "primary_culture_270513_PCA2_ROCK"
-idx_correlatedsamples <- 1:20
 
+# <----------  Inputs:        ----------> 
+source.xlsx             <- "/home/comrade/Desktop/Merged_drug_screening_data.xlsx"
+current_sample          <- "X564_23012012_9999_BM"
+drug.feature            <- "Name.Drug"
+top.drugs               <- 79                      # [10:99]
+top.samples             <- 25                      # [1:39]
+features.head           <- 2
+# <----------  end of Inputs  ----------> 
 
-DSS_table_wb <- loadWorkbook ("./Merged_drug_screening_data.xlsx")
-DSS_tbl <- readWorksheet(DSS_table_wb, sheet=1, header = TRUE)
+DSS_table_wb  <- loadWorkbook (source.xlsx)
+DSS_tbl       <- readWorksheet(DSS_table_wb, sheet=1, header = TRUE)
+remove(DSS_table_wb)
+
+top.samples   <- top.samples + 1
+samples.count <- dim(DSS_tbl)[2] - features.head
+
 #Filter out drugs screened over a few cell lines
 #filt <- apply(as.matrix(DSS_tbl[,-c(1:5)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
-#Filter out top drugs
 
-filt <- order(DSS_tbl[,current_sample],decreasing=TRUE)
-DSS_tbl <- DSS_tbl[filt,]
-DSS_tbl <- DSS_tbl[1:70,]
-drugs <- as.character(DSS_tbl$Name.Drug.x)
-xpr <- as.matrix(DSS_tbl[,-c(1:5)])
+# Order drugs according to sensitivity in the sample
+filt      <- order(DSS_tbl[,current_sample], decreasing=TRUE)
+DSS_tbl   <- DSS_tbl[filt,]
+
+# Trim top sensitive drugs
+DSS_tbl   <- DSS_tbl[1:top.drugs,]
+
+drugs <- as.character(DSS_tbl[,drug.feature])
+xpr <- as.matrix(DSS_tbl[,-c(1:features.head)])
 rownames(xpr) <- drugs
 
-# EndOf Raw Data Preparation
-# ===========================
+#tmp.enrich <- as.character( correlation.table[ ,"Cell.Line"] )
+#tmp.enrich <- as.character( enrichment.table[enrichment.table[,"significant"] ,"Cell.Line"] )
 
-indx <- which( rownames(matrix.NEW) %in% drugs.sensitive$DrugName )
-xpr <- matrix.NEW[indx,]
+#col.mat <- which( colnames(matrix.NEW) %in% tmp.enrich)
+#colnames(matrix.NEW)[col.mat] <- strtrim(colnames(matrix.NEW)[col.mat], 18)
+#tmp.enrich <- strtrim(tmp.enrich, 18)
+#current_sample <- strtrim(current_sample, 18)
+ 
+#indx <- which( rownames(matrix.NEW) %in% drugs.sensitive$DrugName )
+#xpr <- matrix.NEW[indx,]
+#drugs <- as.character(data.MERGED$Name.Drug)  
 
 # Create Groups for Percentage Plot
 # ==================================
@@ -39,6 +59,7 @@ mat <-  table(xpr$X1,fct)
 df <-  prop.table(mat,1)
 df <- df[,3:1]
 df <- df[order(df[,1],decreasing=FALSE),]
+
 #Order of drug names. You can replace this order with the drug list you are querrying.
 levels_order <- rownames(df)
 df.m <- melt(df)
@@ -51,20 +72,41 @@ df.m$Groups <- factor(df.m$Groups,levels=c("Sensitive (>= 15)","Intermediate (5 
 # =========================================
 # xpr_patients <- as.matrix(DSS_tbl[,-c(1:5)])
 #xpr_patients <- xpr_patients[,idx_correlatedsamples]
-tmp.enrich <- as.character( enrichment.table[enrichment.table[,"significant"] ,"Cell.Line"] )
-tmp.enrich <- c( current_sample, tmp.enrich[1:20] )
-idx_correlatedsamples <- which( colnames(matrix.NEW) %in% tmp.enrich)
-xpr_patients <- matrix.NEW[,idx_correlatedsamples]
+#tmp.enrich <- as.character( correlation.table[ ,"Cell.Line"] )
+
+#tmp.enrich <- as.character( enrichment.table[enrichment.table[,"significant"] ,"Cell.Line"] )
+#tmp.enrich <- c( current_sample, tmp.enrich[1:20] )
+#idx_correlatedsamples <- which( colnames(matrix.NEW) %in% tmp.enrich)
+
+#xpr_patients <- matrix.NEW[,idx_correlatedsamples]
+
+# Convert data table to numetic matrix
+tmp.matrix <- as.matrix(DSS_tbl[,-c(1:features.head)])
+rownames(tmp.matrix) <- drugs
+
+# Compute correlations
+corr.data <- rcorr(tmp.matrix)
+rs <- corr.data$r[current_sample,]
+ps <- corr.data$P[current_sample,]
+corr.table <- data.frame(Corr=rs, pVal=ps)
+
+# order according to correlation value
+corr.table <- corr.table[ order(corr.table$Corr, decreasing=TRUE), ]
+corr.table$Cell.Line <- as.factor(rownames(corr.table))
+
+tmp.enrich <- corr.table[1:top.samples,"Cell.Line"]
+idx_correlatedsamples <- which( colnames(tmp.matrix ) %in% tmp.enrich)
+xpr_patients <- as.matrix(tmp.matrix[,idx_correlatedsamples])
 
 
 #rownames(xpr_patients) <- drugs
 xpr_patients <- melt(xpr_patients)
 
-xpr_patients$X1 <- factor(xpr_patients$X1,levels=levels_order)
-xpr_patients$X2 <- factor(xpr_patients$X2,levels=tmp.enrich)
+xpr_patients$X1 <- factor(as.character( xpr_patients$X1 ),levels=levels_order)
+xpr_patients$X2 <- factor(as.character( xpr_patients$X2 ),levels=tmp.enrich)
 
 xpr_patients <- xpr_patients[!is.na(xpr_patients[,"X1"]),]
-xpr_patients <- data.frame(xpr_patients, data_type=factor(rep("Top correlating samples",nrow(xpr_patients))))
+xpr_patients <- data.frame(xpr_patients, data_type=factor( rep("Top correlating samples", nrow(xpr_patients)) ))
 
 # Sensitivity Probability
 # ================================
@@ -80,22 +122,20 @@ df.m$value <- df.m$value*100
 df.m$data_type <- factor(df.m$data_type)
 smp_xpr$data_type <- factor(smp_xpr$data_type)
 
-
 #Set the plot size
 #X11(width=18, height=10.6)
-png(file = "Sanger_Sensitivity_Histogram_300dpi.png", width = 1500, height = 1000,units = "px",res=90)
+png(file = "Sanger_Sensitivity_Histogram_300dpi.png", width = 1750, height = 1300,units = "px",res=90)
 main_title <- paste("Sensitivity profile to",length(drugs),"compounds by DSS scores",sep=" ")
 base_size=15
-a <- ggplot()+ labs(x = "Compound" , y = "DSS score ::: Percentage of sensitivity \n out of 182 samples") + theme(legend.key.size = unit(2, "lines"),legend.position=c(1,0.3),legend.justification=c(-0.1,0),plot.margin = unit(c(-0.7,6,0.5,0.5),"cm"),
-legend.text = element_text(size = base_size * 0.7),legend.title = element_text(size = base_size * 0.8, face = "bold", hjust = 0), axis.text.x = element_text(angle = 90,hjust = 1, vjust = 0.3,family= "mono",face= "bold",colour = "black",size = base_size),axis.title.x =  element_text(size = base_size), axis.title.y = element_text(size = base_size*0.9, angle = 90,vjust = 0.5),
+a <- ggplot()+ labs( x = "Compound" , y = paste("DSS score ::: Percentage of \n sensitivity out of", samples.count, "samples", sep=" ") ) + theme(legend.key.size = unit(2, "lines"),legend.position=c(1,0.3),legend.justification=c(-0.1,0),plot.margin = unit(c(-0.7,6,0.5,0.5),"cm"),
+legend.text = element_text(size = base_size * 0.7),legend.title = element_text(size = base_size * 0.8, face = "bold", hjust = 0), axis.text.x = element_text(angle = 51,hjust = 1, vjust = 1,family= "mono",face= "bold",colour = "black",size = base_size*0.85),axis.title.x =  element_text(size = base_size), axis.title.y = element_text(size = base_size*0.9, angle = 90,vjust = 0.5),
 panel.grid.major = element_line(colour = "grey90"), axis.text.y = element_text(hjust = 1,family= "mono",face= "bold",colour = "black", size = base_size),plot.title = element_text(size = base_size), panel.grid.minor = element_blank(), panel.background= element_blank(),plot.background = element_rect(fill = "white", colour = "white" )) 
 b <- a + geom_bar(data = df.m, aes(x = Compound, y=value, fill = Groups),stat = "identity", position = "stack") 
 b <- b + geom_bar(data = smp_xpr, aes(x = Compound, y=value, fill = Groups),stat = "identity",position = "stack") 
 b <- b + scale_fill_discrete("Response (DSS range)") 
-b <- b + facet_grid(data_type ~. ,scales="free_y")+ scale_y_continuous(breaks=c(-100,-75,-50,-25,-10,0,10,25,50,75,100),labels=c(100,75,50,25,10,0,"10%","25%","50%","75%","100%"))
+b <- b + facet_grid(data_type ~. ,scales="free_y")+ scale_y_continuous(breaks=c(-100,-75,-50,-25,0,25,50,75,100),labels=c(100,75,50,25,0,"25%","50%","75%","100%"))
 #b <- b 
 #b
-
 
 library(gridExtra)
 b2 <- ggplot(data = xpr_patients, aes(x = X1, y=X2, group=value))+ geom_tile(aes(fill = value)) + theme(legend.key.size = unit(2, "lines"),axis.text.x=element_blank(),legend.position=c(1,0.3),legend.justification=c(-0.2,0),
@@ -121,3 +161,4 @@ dev.off()
 
 
 #ggsave(filename="./Sanger_Sensitivity_Histogram_300dpi.png",p1,dpi=300)
+

@@ -16,6 +16,7 @@ library(reshape2)
 
 # 1. Upload a New Screen
 read.csv(file="../datasets/merged_dss_new.csv", head=TRUE, sep="\t") -> data.MERGED  # use check.names
+#read.csv(file="../datasets/leukemia_all_celllines_data_DSS.csv", head=TRUE, sep="\t") -> data.MERGED
 
 # 2. Identify (a) top Sensitive and (b) Resistant Drugs
 cell.line <- "SR"
@@ -28,7 +29,7 @@ rownames(matrix.MERGED) <- data.MERGED[,2]  # assign colnames with drug names
 #nas <- is.na(matrix.MERGED); matrix.MERGED[nas] <- 0
 remove(nas, drop)
 
-cut <- 21
+cut <- 11
 drugSensitivity(matrix.MERGED, cell.line, cut)
 plot( density( matrix.MERGED[,cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
 hist(matrix.MERGED[,cell.line])

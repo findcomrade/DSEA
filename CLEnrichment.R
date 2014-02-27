@@ -16,10 +16,11 @@ library(reshape2)
 library(Hmisc)
 
 # 1. Upload a New Screen
-read.csv(file="../datasets/merged_dss_new.csv", head=TRUE, sep="\t") -> data.NEW
+#read.csv(file="../datasets/merged_dss_new.csv", head=TRUE, sep="\t") -> data.NEW
+read.csv(file="../datasets/leukemia_all_celllines_data_DSS.csv", head=TRUE, sep="\t") -> data.NEW
 
 # 2. Identify (a) top Sensitive and (b) Resistant Drugs
-target.cell.line <- "primary_culture_270513_PCA2_ROCK"
+target.cell.line <- "FHRB_1886_17092013_0930_BM"
 threshold <- 0.05            # higher p-value
 
 matrix.NEW <- data.NEW
@@ -30,11 +31,11 @@ rownames(matrix.NEW) <- data.NEW[,2]  # assign colnames with drug names
 #nas <- is.na(matrix.NEW); matrix.NEW[nas] <- 0
 remove(nas, drop)
 
-drugSensitivity(matrix.NEW, target.cell.line, 15)
+drugSensitivity(matrix.NEW, target.cell.line, 20)
 # plot( density( matrix.NEW[,target.cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
 # hist(matrix.NEW[,target.cell.line])
 
-dss.cutoff <- 9
+dss.cutoff <- 11
 drugs.sensitive <- topSensitive(matrix.NEW, target.cell.line, dss.cutoff)
 drugs.resistant <- topResistant(matrix.NEW, target.cell.line)
 
