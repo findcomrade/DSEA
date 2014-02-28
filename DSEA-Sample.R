@@ -35,8 +35,8 @@ rownames(matrix.New) <- dsrt.DATA[,2]               # assign colnames with drug 
 # ==================================== #
 
 drugSensitivity(matrix.New, target.cell.line, dss.cutoff)
-# plot( density( matrix.New[,target.cell.line], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
-# hist(matrix.New[,target.cell.line])
+sample.profile <- matrix.CSamples[,target.sample]
+tmp <- auxDSSDensityEstimate(vector=sample.profile, method="gaussian", hh.cells=49)
 
 drugs.sensitive <- topSensitive(matrix.New, target.cell.line, dss.cutoff)
 drugs.resistant <- topResistant(matrix.New, target.cell.line)

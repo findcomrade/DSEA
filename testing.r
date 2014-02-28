@@ -1,9 +1,9 @@
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 library(ggplot2)
 library(grid)
-library(XLConnect)
 library(reshape)
 
+setwd("/home/comrade/Projects/R_scripts")
 
 
 
@@ -46,40 +46,3 @@ a <- ggplot(df.m, aes(x = Compound, y=value*100, fill = Groups)) + labs(x = "Com
 b <- a + geom_bar(stat = "identity", position = "stack")+scale_fill_discrete("Response (DSS range)") + coord_flip()
 b
 ggsave(filename="/home/comrade/Desktop/SR_sensitive.png",dpi=300)
-
-source('testing-related.r')
-
-read.csv(file="../datasets/updated_22_aug/AML_updated.csv", head=TRUE, sep="\t") -> aml.DATA
-read.csv(file="../datasets/drug_dictionary_FIMM.csv", head=TRUE, sep="\t") -> fimm.DICT
-read.csv(file="../datasets/updated_22_aug/fimm_collection.csv", head=TRUE, sep="\t") -> fimm.UPDATE
-
-
-fimm.UPDATE <- unique(fimm.UPDATE)
-
-
-aml.DATA[,"ID.Drug"] <- strtrim(aml.DATA[,"ID.Drug"],10)  # trim batch.id
-fimm.DICT$ID.Drug <- strtrim(fimm.DICT[,"FIMM.batch.ID"],10)
-
-collection.FIMM <- cbind(fimm.DICT[,5], fimm.DICT[,1:4])
-colnames(collection.FIMM) <- c("FIMM.ID", "FIMM.Batch.ID", "Drug.Name", "ChEMBL.ID", "PubChem.CID")
-
-collection.FIMM <- unique(collection.FIMM)
-
-sum( unique(fimm.UPDATE[,"FIMM.ID"]) %in% unique(collection.FIMM[,"FIMM.ID"]) )  # 256
-sum(collection.FIMM[,"FIMM.ID"] %in% fimm.UPDATE[,"FIMM.ID"] )  # 256
-sum( unique(fimm.UPDATE[,"FIMM.BATCH.ID"]) %in% unique(collection.FIMM[,"FIMM.Batch.ID"]) )  # 201
-sum( unique(fimm.UPDATE[,"Drug.Name"]) %in% unique(collection.FIMM[,"Alias"]) )  # 242
-
-# bind Targets to collection
-collection.FIMM$Target <- "Undefined"
-wh <- which( collection.FIMM[,"FIMM.ID"] %in% unique(fimm.UPDATE[,"FIMM.ID"]) )
-for(row in wh){
-  id <- as.character( collection.FIMM[row,"FIMM.ID"] )
-  collection.FIMM[row, "Target"] <- as.character( unique( fimm.UPDATE[ fimm.UPDATE[,"FIMM.ID"] == id, "Mechanism.Targets"] ))
-}
-
-save(collection.FIMM, file = "RData/FimmCollection.RData")
-
-sum( aml.DATA[,"ID.Drug"] %in% fimm.UPDATE[,"FIMM.ID"] ) 
-sum( aml.DATA[,"ID.Drug"] %in% fimm.DICT[,"FIMM.batch.ID"] ) 
-

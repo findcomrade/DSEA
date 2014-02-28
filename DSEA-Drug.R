@@ -32,8 +32,7 @@ rownames(matrix.CSamples) <- dsrt.DATA[,2]                   # assign colnames w
 # ==================================== #
 
 drugSensitivity(matrix.CSamples, target.sample, dss.cutoff)
-#plot( density( matrix.CSamples[,target.sample], na.rm=TRUE), main = "Full Set", xlab = "DSS" )
-#hist(matrix.CSamples[,target.sample])
+sample.profile <- matrix.CSamples[,target.sample]
 
 drugs.sensitive <- topSensitive(matrix.CSamples, target.sample, dss.cutoff)
 drugs.resistant <- topResistant(matrix.CSamples, target.sample)
