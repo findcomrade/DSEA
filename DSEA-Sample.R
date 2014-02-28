@@ -6,7 +6,6 @@
 #######################################################
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
-source('pipeline_sup.R')
 
 library(grid)
 library(gplots)
@@ -15,6 +14,7 @@ library(RJSONIO)
 library(reshape2)
 library(Hmisc)
 
+source('pipeline_sup.R')
 source('source/dsea_aux.R')
 ### Input Parameters                 ###
 # ==================================== #
@@ -37,8 +37,8 @@ rownames(matrix.New) <- dsrt.DATA[,2]               # assign colnames with drug 
 
 drugSensitivity(matrix.New, target.cell.line, dss.cutoff)
 
-sample.profile <- matrix.New['Imatinib',]
-prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=55, graph=TRUE,
+sample.profile <- matrix.New[,"SR"]
+prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=35, graph=TRUE,
                           title=paste("Sample", target.cell.line, "PDF Estimate", sep=" :: "), xax.text="DSS")
 
 auxDSSSpecificityScore(prob.df, 5, graph=TRUE)
