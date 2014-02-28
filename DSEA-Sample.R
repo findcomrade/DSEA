@@ -37,9 +37,10 @@ rownames(matrix.New) <- dsrt.DATA[,2]               # assign colnames with drug 
 
 drugSensitivity(matrix.New, target.cell.line, dss.cutoff)
 
-sample.profile <- matrix.New[,'X693']
+sample.profile <- matrix.New['Imatinib',]
 prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=55, graph=TRUE,
                           title=paste("Sample", target.cell.line, "PDF Estimate", sep=" :: "), xax.text="DSS")
+
 auxDSSSpecificityScore(prob.df, 5, graph=TRUE)
 
 drugs.sensitive <- topSensitive(matrix.New, target.cell.line, dss.cutoff)

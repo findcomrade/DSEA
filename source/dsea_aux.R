@@ -11,8 +11,19 @@ auxDSSDensityEstimate <- function(vector, hh.cells=35, method="gaussian", title=
   #   estimate: a data frame 
   raw   <- as.numeric(vector[!is.na(vector)])
   
+  den <- tryCatch({
+    density(raw, na.rm=TRUE, kernel=method, bw=bw.SJ(raw))  
+  }, error = function(e){ 
+    # print(e)
+    print('Sample is too sparse => Estimate is not reliable!')
+    return(-1) 
+  })
+  
+  # The following will be exected when bw.SJ() fails due to sparse data:
+  # We fix bandwidth == 0.31 (  based on intuition :)  )
+  if (den == -1) den <- density(raw, na.rm=TRUE, kernel=method, bw=0.31)
+  
   # Plot
-  den  <- density(raw, na.rm=TRUE, kernel=method, bw=bw.SJ(raw))
   if(graph){
     hh <- hist(vector, breaks=hh.cells, plot=graph, probability=TRUE, main = title, xlab = xax.text, ylim=c(0, max(den$y*2.1)))
     # den$y*diff(hh$mids[1:2])*length(vector)  # fit density probabilities to the Y axis in case probability=FALSE

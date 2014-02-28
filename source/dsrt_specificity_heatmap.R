@@ -5,7 +5,7 @@ library(grid)
 library(Hmisc)
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
-
+source('source/dsea_aux.R')
 
 # <----------  Inputs:        ----------> 
 source.xlsx             <- "/home/comrade/Ubuntu One/DSEA/datasets/Merged_drug_screening_data.xlsx"
@@ -25,6 +25,13 @@ samples.count <- dim(DSS_tbl)[2] - features.head
 
 #Filter out drugs screened over a few cell lines
 #filt <- apply(as.matrix(DSS_tbl[,-c(1:5)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
+
+# Compute Specificity of each drug for the given sample
+#sample.
+#prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=55, graph=TRUE,
+#                                 title=paste("Sample", target.cell.line, "PDF Estimate", sep=" :: "), xax.text="DSS")
+
+# auxDSSSpecificityScore(prob.df, 5, graph=TRUE)
 
 # Order drugs according to sensitivity in the sample
 filt      <- order(DSS_tbl[,current_sample], decreasing=TRUE)
