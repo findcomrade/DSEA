@@ -8,12 +8,12 @@ setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 
 
 # <----------  Inputs:        ----------> 
-source.xlsx             <- "/home/comrade/Desktop/Merged_drug_screening_data.xlsx"
+source.xlsx             <- "/home/comrade/Ubuntu One/DSEA/datasets/Merged_drug_screening_data.xlsx"
 current_sample          <- "X564_23012012_9999_BM"
 drug.feature            <- "Name.Drug"
 top.drugs               <- 79                      # [10:99]
 top.samples             <- 25                      # [1:39]
-features.head           <- 2
+features.head           <- 3
 # <----------  end of Inputs  ----------> 
 
 DSS_table_wb  <- loadWorkbook (source.xlsx)

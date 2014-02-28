@@ -10,3 +10,5 @@ RData/
 r-code.Rproj
 *.json
 *.json~
+*.png
+*.PNG

@@ -15,6 +15,7 @@ library(RJSONIO)
 library(reshape2)
 library(Hmisc)
 
+source('source/dsea_aux.R')
 ### Input Parameters                 ###
 # ==================================== #
 dsrt.dataset.file     <- "../datasets/merged_dss_new.csv"
@@ -35,8 +36,11 @@ rownames(matrix.New) <- dsrt.DATA[,2]               # assign colnames with drug 
 # ==================================== #
 
 drugSensitivity(matrix.New, target.cell.line, dss.cutoff)
-sample.profile <- matrix.CSamples[,target.sample]
-tmp <- auxDSSDensityEstimate(vector=sample.profile, method="gaussian", hh.cells=49)
+
+sample.profile <- matrix.New[,'X693']
+prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=55, graph=TRUE,
+                          title=paste("Sample", target.cell.line, "PDF Estimate", sep=" :: "), xax.text="DSS")
+auxDSSSpecificityScore(prob.df, 5, graph=TRUE)
 
 drugs.sensitive <- topSensitive(matrix.New, target.cell.line, dss.cutoff)
 drugs.resistant <- topResistant(matrix.New, target.cell.line)
