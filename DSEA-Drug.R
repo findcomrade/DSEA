@@ -7,6 +7,7 @@
 
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 source('pipeline_sup.R')
+source('source/dsea_aux.R')
 
 library(grid)
 library(gplots)
@@ -16,20 +17,32 @@ library(reshape2)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file     <- "../datasets/merged_dss_new.csv"
-target.sample         <- "SR"
-dss.cutoff            <- 21
+dsrt.dataset.file     <- "../datasets/DSS2_merged_34-samples_FO3D-16-onwards_2014-04-15.csv"
+target.sample         <- "LAPC4.AF8.030613.AF8.replicate1" # "merged_dss_new.csv"
+dss.cutoff            <- 11
 # ==================================== #
 
 
 # 1. Upload a New Screen
+
 read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
+
+dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
 
 matrix.CSamples <- dsrt.DATA
 matrix.CSamples <- data.matrix(matrix.CSamples[,-c(1,2)])    # del 1st & 2nd rows 
 rownames(matrix.CSamples) <- dsrt.DATA[,2]                   # assign colnames with drug names
 
 # ==================================== #
+
+#target.drug  <- "Dasatinib"
+#drug.profile <- matrix.CSamples[target.drug,]
+#prob.df <- auxDSSDensityEstimate(vector=drug.profile, hh.cells=35, graph=TRUE,
+#                                 title=paste("Drug", target.drug, "PDF Estimate", sep=" :: "), xax.text="DSS")
+
+#auxDSSSpecificityScore(probdf=prob.df, thresh=54, graph=TRUE, title=paste(target.drug, "Profile", sep="  "))
+
+#####
 
 drugSensitivity(matrix.CSamples, target.sample, dss.cutoff)
 sample.profile <- matrix.CSamples[,target.sample]
@@ -54,7 +67,7 @@ enrichment.table <- buildEnrichmentD(tree.Drugs, drugs.sensitive, drugs.resistan
 is.top <- tree.Drugs[,"DrugName"] %in% drugs.sensitive$DrugName      # sensitive
 is.bot <- tree.Drugs[,"DrugName"] %in% drugs.resistant$DrugName      # resistant
 tree.Drugs[,"isTop"] <- 0 
-tree.Drugs[is.top,"isTop"] <- 1
+tree.Drugs[is.top,"isTop"] <- 0
 #tree.DRUGS[is.bot,"isTop"] <- -1
 
 dropJSON(tree.Drugs, path='Results/json/drug_clust.json')

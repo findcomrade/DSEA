@@ -14,6 +14,8 @@ drugSensitivity <- function(dss.matrix, cell.line, cut=25){
   myclorz <- ifelse(ordered.data %in% top.drugs, col[1], col[2])
   barplot( ordered.data, axisnames =TRUE, names.arg=names(ordered.data), horiz=FALSE, col= myclorz, las=2, cex.axis = 0.8, cex.names = 0.25,
                 space=1, axis.lty=1, lwd=2, xaxs="i", yaxs="i", ylab="DSS", main =paste("Drug Sensitivity for \"", cell.line, "\" ", sep="") )
+  
+  return(ordered.data)
 }
 
 plotDrugClassesDistibution <- function(drug.classes, category.name=':'){
@@ -206,8 +208,8 @@ buildEnrichmentCL <- function(dss.db, dss.new, sample.name, dss.cutoff=25){
   enrichment.table <- data.frame(Cell.Line, top.count, screened.count, SCORE, p.value)
   enrichment.table$bf.correction <- p.adjust(p.value, "bonferroni")
   enrichment.table <- enrichment.table[ enrichment.table$SCORE != 0, ]  # trim SCORE == 0
-  enrichment.table <- enrichment.table[ order(enrichment.table[,6]), ]  # order by bonferroni corrected p-value
   enrichment.table$perc <- as.numeric(format(round(enrichment.table[,"SCORE"]/enrichment.table[,"top.count"] *100, 2), nsmall=2))  # calculate percentage
+  enrichment.table <- enrichment.table[ order(enrichment.table[,5]), ]  # order by bonferroni corrected p-value
   enrichment.table$significant <- enrichment.table$bf.correction <= 0.05
   
   return (enrichment.table)
@@ -254,6 +256,34 @@ getEnrichedCellLines <- function(corr.table, enrich.table, r.min, p.max){
   }
   
   return(result.table)
+}
+dropJSONAnnotations <- function(clusters.data, class.col="DrugClass", path="circular.json"){
+  # Generates JSON file fot D3 library
+  # 'clusters.data' - a data frame like e.g. 'leukemia.ClUST'
+  
+  sink(path)
+  cat("{", "\n\t\"name\": \"Data Set\",", "\n\t\"children\": [\n")  # push root node
+  
+  for (cluster in unique(clusters.data$Cluster)){  # Over Clusters
+    cat("\t{", "\n\t\"name\": ", paste("\"Cluster ", cluster, "\",", sep=""), "\n\t\"children\": [\n")
+    
+    last.index <- length(clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"])
+    
+    for(drug in clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"]){  # Over Drugs
+      # extract drug respose code:
+      # '1' - "sensitive"; '-1' - "resistant (DSS == 0)"; '0' - "intermediate".
+      drug.class <- clusters.data[clusters.data[,"DrugName"] == drug,class.col]  
+      if( drug == clusters.data[clusters.data[,"Cluster"] == cluster,"DrugName"][last.index] ){
+        cat("\t\t{", "\t\"name\": ", paste("\"",drug, "\", ",  "\"anno\": ", "\"", drug.class, "\"", sep=""), " } \n")    
+      }
+      else{ cat("\t\t{", "\t\"name\": ", paste("\"",drug, "\", ", "\"anno\": ", "\"", drug.class, "\"", sep=""), " }, \n") }
+    }
+    
+    if( cluster == max(unique(clusters.data$Cluster)) ){ cat("\t]", "\n\t}") }
+    else { cat("\t]", "\n\t},") }
+  }
+  cat("]", "\n}")
+  sink()
 }
 
 dropJSON <- function(clusters.data, path="circular.json"){

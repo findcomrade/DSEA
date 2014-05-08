@@ -12,3 +12,6 @@ r-code.Rproj
 *.json~
 *.png
 *.PNG
+*.csv
+*.pdf
+*.PDF

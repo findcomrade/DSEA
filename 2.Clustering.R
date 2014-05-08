@@ -12,18 +12,27 @@ library(RJSONIO)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file <- "../datasets/merged_dss_new.csv"
-sample.to.exclude <- "SR"
+dsrt.dataset.file <- "../datasets/Oslo_set.csv"
+#sample.to.exclude <- "MV4.11" #"MV4.11.AF8.6.9.AUg.2013"
+dss.min  <- 5             # minimal dss value which is appropriate for further analysis
+dss.min.fract  <- 0.5     #
 
 ### Import Data Sets                 ###
 # ==================================== #
-read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
+read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
+
+#Filter out drugs screened over a few cell lines
+filt <- apply(as.matrix(dsrt.DATA[,-c(1,2)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
+
+
+dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
+# dsrt.DATA  <- dsrt.DATA[,1:20]
 
 # Exclude a Sample
-tmp <- which( colnames(dsrt.DATA) == sample.to.exclude ) 
-dsrt.DATA <- dsrt.DATA[,-tmp]
+#tmp <- which( as.character(colnames(dsrt.DATA)) == sample.to.exclude ) 
+#dsrt.DATA <- dsrt.DATA[,-tmp]
 
-remove(dsrt.dataset.file, tmp)
+#remove(dsrt.dataset.file, tmp)
 ### Data Set Preprocessing           ###
 # ==================================== #
 
@@ -59,8 +68,9 @@ hr <- hclust(as.dist(1-corr.Drugs), method="complete")
 hc <- hclust(as.dist(1-corr.Sampl), method="complete")  
 
 # Cuts the tree and creates color vector for clusters
-mycl <- cutree(hr, h=max(hr$height)/1.5) 
-mysl <- cutree(hc, h=max(hr$height)/4) 
+mycl <- cutree(hr, h=max(hr$height)/1.7) 
+mysl <- cutree(hc, h=0.3) #h=max(hc$height)/1.05) 
+
 
 tree.Drugs <- as.data.frame(mycl)         # to use 'tree.Drugs' in further analysis
 tree.Sampl <- as.data.frame(mysl)         # to use 'tree.Sampl' in further analysis
@@ -73,6 +83,7 @@ myheatcol <- topo.colors(75)
 # Creates heatmap for entire data set where the obtained clusters are indicated in the color bar
 heatmap.2(matrix.CSamples, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myheatcol, 
           scale="row", trace="none", RowSideColors=mycolhc, ColSideColors=mycolhs, cexRow=0.3, cexCol=0.5) 
+
 dev.off()
 
 remove(myheatcol, mycolhc, mycolhs)

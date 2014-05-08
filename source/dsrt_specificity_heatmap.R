@@ -8,8 +8,8 @@ setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 source('source/dsea_aux.R')
 
 # <----------  Inputs:        ----------> 
-source.xlsx             <- "/home/comrade/Ubuntu One/DSEA/datasets/Merged_drug_screening_data.xlsx"
-current_sample          <- "X564_23012012_9999_BM"
+source.xlsx             <- "/home/comrade/Ubuntu One/DSEA/datasets/DSS2_merged_34-samples_FO3D-16-onwards_2014-04-15.xlsx"
+current_sample          <- "HUB.1613_270513_culture1.rock"
 drug.feature            <- "Name.Drug"
 top.drugs               <- 79                      # [10:99]
 top.samples             <- 25                      # [1:39]
@@ -26,13 +26,6 @@ samples.count <- dim(DSS_tbl)[2] - features.head
 #Filter out drugs screened over a few cell lines
 #filt <- apply(as.matrix(DSS_tbl[,-c(1:5)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
 
-# Compute Specificity of each drug for the given sample
-#sample.
-#prob.df <- auxDSSDensityEstimate(vector=sample.profile, hh.cells=55, graph=TRUE,
-#                                 title=paste("Sample", target.cell.line, "PDF Estimate", sep=" :: "), xax.text="DSS")
-
-# auxDSSSpecificityScore(prob.df, 5, graph=TRUE)
-
 # Order drugs according to sensitivity in the sample
 filt      <- order(DSS_tbl[,current_sample], decreasing=TRUE)
 DSS_tbl   <- DSS_tbl[filt,]
@@ -43,6 +36,14 @@ DSS_tbl   <- DSS_tbl[1:top.drugs,]
 drugs <- as.character(DSS_tbl[,drug.feature])
 xpr <- as.matrix(DSS_tbl[,-c(1:features.head)])
 rownames(xpr) <- drugs
+
+# Compute Specificity of each drug for the given sample
+specificity.profile <- apply(xpr, 1, function(x) { 
+  hit.dss      <- x[current_sample]
+  print(hit.dss)
+  den.esimate  <- auxDSSDensityEstimate(vector=x, graph=FALSE) 
+  return( auxDSSSpecificityScore(den.esimate, hit.dss, graph=FALSE) )
+})
 
 #tmp.enrich <- as.character( correlation.table[ ,"Cell.Line"] )
 #tmp.enrich <- as.character( enrichment.table[enrichment.table[,"significant"] ,"Cell.Line"] )
@@ -131,7 +132,7 @@ smp_xpr$data_type <- factor(smp_xpr$data_type)
 
 #Set the plot size
 #X11(width=18, height=10.6)
-png(file = "Sanger_Sensitivity_Histogram_300dpi.png", width = 1750, height = 1300,units = "px",res=90)
+png(file = "DSRT_Specificity_HeatMap.png", width = 1750, height = 1300,units = "px",res=90)
 main_title <- paste("Sensitivity profile to",length(drugs),"compounds by DSS scores",sep=" ")
 base_size=15
 a <- ggplot()+ labs( x = "Compound" , y = paste("DSS score ::: Percentage of \n sensitivity out of", samples.count, "samples", sep=" ") ) + theme(legend.key.size = unit(2, "lines"),legend.position=c(1,0.3),legend.justification=c(-0.1,0),plot.margin = unit(c(-0.7,6,0.5,0.5),"cm"),

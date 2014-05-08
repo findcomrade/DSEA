@@ -34,4 +34,4 @@ colnames(expr.melt)   <- c("Gene", "Sample", "logFC")
 
 ggplot(expr.melt, aes(x=Gene, y=logFC, color=Sample)) + geom_point(size=2) + theme(axis.text.x = element_text(angle = 90, size=5, hjust = 1))
 
-plot(hc)
+# plot(hc)
