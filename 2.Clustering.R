@@ -12,20 +12,21 @@ library(RJSONIO)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file <- "../datasets/Oslo_set.csv"
-#sample.to.exclude <- "MV4.11" #"MV4.11.AF8.6.9.AUg.2013"
-dss.min  <- 5             # minimal dss value which is appropriate for further analysis
-dss.min.fract  <- 0.5     #
+dsrt.dataset.file <- "../datasets/leukemia/28_AML_cell lines_may26_14.csv"
+#sample.to.exclude <- "FHRB_668_01082013_1000_BM"  # "FHRB_668_01082013_1000_BM"
+
+dss.min  <- 3             # minimal dss value which is appropriate for further analysis
+dss.min.fract  <- 0.9     #
 
 ### Import Data Sets                 ###
 # ==================================== #
 read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
 
 #Filter out drugs screened over a few cell lines
-filt <- apply(as.matrix(dsrt.DATA[,-c(1,2)]), 1, function(x) sum(is.na(x)) < 0.50 * length(x))
+filt <- apply(as.matrix(dsrt.DATA[,-c(1,2)]), 1, function(x) sum(is.na(x)) < 0.70 * length(x))  #sum(x < dss.min) < dss.min.fract * length(x))
+dsrt.DATA  <- dsrt.DATA[filt,]
 
-
-dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
+# dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
 # dsrt.DATA  <- dsrt.DATA[,1:20]
 
 # Exclude a Sample
@@ -68,8 +69,8 @@ hr <- hclust(as.dist(1-corr.Drugs), method="complete")
 hc <- hclust(as.dist(1-corr.Sampl), method="complete")  
 
 # Cuts the tree and creates color vector for clusters
-mycl <- cutree(hr, h=max(hr$height)/1.7) 
-mysl <- cutree(hc, h=0.3) #h=max(hc$height)/1.05) 
+mycl <- cutree(hr, h=max(hr$height)/1.3) 
+mysl <- cutree(hc, h=0.25) #h=max(hc$height)/1.05) 
 
 
 tree.Drugs <- as.data.frame(mycl)         # to use 'tree.Drugs' in further analysis

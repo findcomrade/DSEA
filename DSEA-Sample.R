@@ -18,8 +18,8 @@ source('pipeline_sup.R')
 source('source/dsea_aux.R')
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file     <- "../datasets/DSS2_merged_34-samples_FO3D-16-onwards_2014-04-15.csv"
-target.cell.line      <- "LAPC4.AF8.030613.AF8.replicate1"
+dsrt.dataset.file     <- "../datasets/leukemia/28_AML_cell lines_may26_14.csv"
+target.cell.line      <- "OCI.AML2"
 p.cutoff              <- 0.05
 cor.cutoff            <- 0.75
 dss.cutoff            <- 15
@@ -27,9 +27,9 @@ dss.cutoff            <- 15
 
 
 # 1. Upload a New Screen
-read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
+read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
 
-dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
+#dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
 
 matrix.New <- dsrt.DATA
 matrix.New <- data.matrix(matrix.New[,-c(1,2)])     # del 1st & 2nd rows 

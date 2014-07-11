@@ -17,17 +17,16 @@ library(reshape2)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file     <- "../datasets/DSS2_merged_34-samples_FO3D-16-onwards_2014-04-15.csv"
-target.sample         <- "LAPC4.AF8.030613.AF8.replicate1" # "merged_dss_new.csv"
-dss.cutoff            <- 11
+dsrt.dataset.file     <- "../datasets/leukemia/28_AML_cell lines_may26_14.csv"
+target.sample         <- "OCI-AML3" 
+dss.cutoff            <- 15
 # ==================================== #
 
 
 # 1. Upload a New Screen
 
-read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
+read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
 
-dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
 
 matrix.CSamples <- dsrt.DATA
 matrix.CSamples <- data.matrix(matrix.CSamples[,-c(1,2)])    # del 1st & 2nd rows 
