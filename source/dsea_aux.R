@@ -1,3 +1,39 @@
+auxDendroPlot <- function(hcl.out, cut.out, cluster.count, threshold){
+  
+  op <- par(bg = "#DDE3CA", cex=0.2, mar=c(5,5,5,3), oma=c(3,3,3,3)) 
+  #, mfrow = c(1, 2))
+  
+  labelColors  <- rainbow( cluster.count)
+  clusMember   <- cut.out
+  
+  colLab       <- function(n) {
+    if (is.leaf(n)) {
+      a       <- attributes(n)
+      labCol  <- labelColors[clusMember[which(names(clusMember) == a$label)]]
+      attr(n, "nodePar") <- c(a$nodePar, lab.col = labCol)
+    }
+    n
+  }
+  
+  clusDendro = dendrapply( as.dendrogram(hcl.out), colLab )
+  
+  table(mycl, cutree(hclust(as.dist(1-corr.Drugs), method="ward"), k=15, h=3) )
+  plot(clusDendro, col = "#487AA1", col.main = "#45ADA8", col.lab = "#7C8071", col.axis = "#F38630", 
+       lwd = 3, lty = 3, sub = "", hang = -1, axes = FALSE)
+  
+  axis(side = 2, at = seq(0, max(hcl.out$height+1), 5), col = "#F38630", labels = FALSE, lwd = 2)
+  # add text in margin
+  mtext(seq(0, max(hcl.out$height+1), 5), side = 2, at = seq(0, max(hcl.out$height+1), 5), line = 1, col = "#A38630", las = 2, cex=0.6)
+  abline(h=threshold, col="#487AA1")
+  plot(hcl.out$height, col = "#487AA1", col.main = "#45ADA8", col.lab = "#7C8071", col.axis = "#F38630", 
+       lwd = 3, lty = 3, sub = "", axes = FALSE, ylab="Ward's Merging Cost function", xlab="Iteration", cex.lab=2)
+  axis(side = 4, at = seq(0, max(hcl.out$height+1), 5), col = "#F38630", labels = FALSE, lwd = 2)
+  mtext(seq(0, max(hcl.out$height+1), 5), side = 4, at = seq(0, max(hcl.out$height+1), 5), line = 1, col = "#A38630", las = 2, cex=0.6)
+  abline(h=threshold, col="#487AA1")
+  
+  par(op)  
+}
+
 auxDSSDensityEstimate <- function(vector, hh.cells=35, method="gaussian", title="Profile", xax.text="value", graph=TRUE){
   # Plots kernel density estimate of the data along with a histogram.
   # Red estimate adjusts for DSS in the range [0,inf) by flipping the left (negative)

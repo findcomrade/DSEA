@@ -17,15 +17,15 @@ library(reshape2)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file     <- "../datasets/leukemia/28_AML_cell lines_may26_14.csv"
-target.sample         <- "OCI-AML3" 
+dsrt.dataset.file     <- "../datasets/merged_dss_new.csv"
+target.sample         <- "MOLM.13" 
 dss.cutoff            <- 15
 # ==================================== #
 
 
 # 1. Upload a New Screen
 
-read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
+read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
 
 
 matrix.CSamples <- dsrt.DATA
@@ -43,7 +43,7 @@ rownames(matrix.CSamples) <- dsrt.DATA[,2]                   # assign colnames w
 
 #####
 
-drugSensitivity(matrix.CSamples, target.sample, dss.cutoff)
+#drugSensitivity(matrix.CSamples, target.sample, dss.cutoff)
 sample.profile <- matrix.CSamples[,target.sample]
 
 drugs.sensitive <- topSensitive(matrix.CSamples, target.sample, dss.cutoff)
@@ -66,7 +66,7 @@ enrichment.table <- buildEnrichmentD(tree.Drugs, drugs.sensitive, drugs.resistan
 is.top <- tree.Drugs[,"DrugName"] %in% drugs.sensitive$DrugName      # sensitive
 is.bot <- tree.Drugs[,"DrugName"] %in% drugs.resistant$DrugName      # resistant
 tree.Drugs[,"isTop"] <- 0 
-tree.Drugs[is.top,"isTop"] <- 0
+tree.Drugs[is.top,"isTop"] <- 1
 #tree.DRUGS[is.bot,"isTop"] <- -1
 
 dropJSON(tree.Drugs, path='Results/json/drug_clust.json')

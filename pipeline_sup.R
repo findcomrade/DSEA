@@ -2,6 +2,58 @@
 library(ggplot2)
 library(reshape)
 
+preprocessClusters <- function(my.cutree, space){
+  # Preprocess and uotput clusters obtained with hclust and cutree.
+  #
+  # Args:
+  #   my.cutree: output of cutree function 
+  #   space: either "samples" or "drugs"
+  #
+  # Returns:
+  #   clt.content: a data frame with item lists by clusters 
+  
+  if (space == "samples")    { cname  <- "SampleName" } 
+  else if (space == "drugs") { cname  <- "DrugName"   } 
+  else {
+    return(0)
+  }
+  
+  # Preprocessing
+  my.cutree[,cname]    <- rownames(my.cutree)
+  colnames(my.cutree)  <- c("Cluster", cname)
+  #my.cutree[,cname]    <- lapply(my.cutree[,cname], str_trim)
+  
+  return(my.cutree)  
+}
+
+getClusterContent <- function(my.cutree, space){
+  # Preprocess and uotput clusters obtained with hclust and cutree.
+  #
+  # Args:
+  #   my.cutree: output of cutree function 
+  #   space: either "samples" or "drugs"
+  #
+  # Returns:
+  #   clt.content: a data frame with item lists by clusters  
+  
+  clt.content <- data.frame()
+  
+  if (space == "samples")    { cname  <- "SampleName" } 
+  else if (space == "drugs") { cname  <- "DrugName"   } 
+  else {
+    return(0)
+  }
+  
+  # Create lists
+  for( clst in unique(my.cutree$Cluster) ){
+    clt.content[clst,1] <- paste("Cluster ", clst, sep="")
+    clt.content[clst,2] <- length(my.cutree[my.cutree[,"Cluster"] == clst,cname])
+    clt.content[clst,3] <- gsub(",", "", toString( my.cutree[my.cutree[,"Cluster"] == clst,cname] )) 
+  }
+  colnames(clt.content) <- c("ClusterSym", "Cluster.Size", "Item.List")
+
+  return(clt.content)
+}
 
 drugSensitivity <- function(dss.matrix, cell.line, cut=25){
   # Looks for a col named as "cell.line", 

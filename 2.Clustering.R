@@ -1,37 +1,38 @@
 setwd("/home/comrade/Ubuntu One/DSEA/r-code")
 source('pipeline_sup.R')
+source('source/dsea_aux.R')
 
 library(vcd)
 library(grid)
 library(Hmisc)
 library(gplots)
 library(stringr)
+library(graphics)
 library(lattice)
 library(reshape2)
 library(RJSONIO)
 
 ### Input Parameters                 ###
 # ==================================== #
-dsrt.dataset.file <- "../datasets/leukemia/28_AML_cell lines_may26_14.csv"
-#sample.to.exclude <- "FHRB_668_01082013_1000_BM"  # "FHRB_668_01082013_1000_BM"
+dsrt.dataset.file <- "../datasets/merged_dss_new.csv"
+sample.to.exclude <- "MOLM.13" 
 
 dss.min  <- 3             # minimal dss value which is appropriate for further analysis
 dss.min.fract  <- 0.9     #
 
+draw.heat  <- 0
+
 ### Import Data Sets                 ###
 # ==================================== #
-read.csv(dsrt.dataset.file, head=TRUE, sep=",") -> dsrt.DATA
+read.csv(dsrt.dataset.file, head=TRUE, sep="\t") -> dsrt.DATA
 
 #Filter out drugs screened over a few cell lines
 filt <- apply(as.matrix(dsrt.DATA[,-c(1,2)]), 1, function(x) sum(is.na(x)) < 0.70 * length(x))  #sum(x < dss.min) < dss.min.fract * length(x))
 dsrt.DATA  <- dsrt.DATA[filt,]
 
-# dsrt.DATA  <- dsrt.DATA[1:306,c(1,2,21:36)]
-# dsrt.DATA  <- dsrt.DATA[,1:20]
-
 # Exclude a Sample
-#tmp <- which( as.character(colnames(dsrt.DATA)) == sample.to.exclude ) 
-#dsrt.DATA <- dsrt.DATA[,-tmp]
+tmp <- which( as.character(colnames(dsrt.DATA)) == sample.to.exclude ) 
+dsrt.DATA <- dsrt.DATA[,-tmp]
 
 #remove(dsrt.dataset.file, tmp)
 ### Data Set Preprocessing           ###
@@ -65,12 +66,20 @@ nas <- is.na(corr.Drugs); corr.Drugs[nas] <- 0
 ### Hierarchial Clustering           ###
 # ==================================== #
 # Alailable methods for HCLUST: "ward", "single", "complete", "average", "mcquitty", "median" or "centroid"
-hr <- hclust(as.dist(1-corr.Drugs), method="complete")
-hc <- hclust(as.dist(1-corr.Sampl), method="complete")  
+drugs.Dist  <- as.dist(1-corr.Drugs)
+dendro.cut  <- 2
+hr          <- hclust(drugs.Dist, method="ward")
+mycl        <- cutree(hr, h=dendro.cut)  #h=max(hr$height)/1.72) 
+set.count   <- length(unique(mycl))
 
-# Cuts the tree and creates color vector for clusters
-mycl <- cutree(hr, h=max(hr$height)/1.3) 
-mysl <- cutree(hc, h=0.25) #h=max(hc$height)/1.05) 
+auxDendroPlot(hr, mycl, set.count, dendro.cut)
+# Compare two clustering results
+table(mycl, cutree(hclust(as.dist(1-corr.Drugs), method="ward"), k=15, h=3) )
+
+sampl.Dist  <- as.dist(1-abs(corr.Sampl))
+hc <- hclust(sampl.Dist, method="complete")
+mysl <- cutree(hc, h=0.5)  #h=max(hc$height)/1.05) 
+
 
 
 tree.Drugs <- as.data.frame(mycl)         # to use 'tree.Drugs' in further analysis
@@ -81,13 +90,32 @@ mycolhs <- rainbow(length(unique(mysl)), start=0.1, end=0.9); mycolhs <- mycolhs
 
 myheatcol <- topo.colors(75)
 
-# Creates heatmap for entire data set where the obtained clusters are indicated in the color bar
-heatmap.2(matrix.CSamples, Rowv=as.dendrogram(hr), Colv=as.dendrogram(hc), col=myheatcol, 
-          scale="row", trace="none", RowSideColors=mycolhc, ColSideColors=mycolhs, cexRow=0.3, cexCol=0.5) 
 
-dev.off()
+if (draw.heat){
+  heatmap.2(matrix.CDrugs, Rowv=as.dendrogram(hc), Colv=as.dendrogram(hr), col=myheatcol, 
+            scale="row", trace="none", RowSideColors=mycolhs, ColSideColors=mycolhc, cexRow=0.3, cexCol=0.5) 
+  dev.off()  
+}
 
 remove(myheatcol, mycolhc, mycolhs)
+
+tree.Drugs  <- preprocessClusters(tree.Drugs, space="drugs")
+tree.Sampl  <- preprocessClusters(tree.Sampl, space="samples")
+
+drug.partition.list  <- getClusterContent(tree.Drugs, space="drugs")
+smpl.partition.list  <- getClusterContent(tree.Sampl, space="samples")
+
+# Save R Objects to a file
+save(tree.Drugs, tree.Sampl, dsrt.DATA, matrix.CSamples, matrix.CDrugs, drug.partition.list, smpl.partition.list, file = "RData/Clusters.RData")
+
+### Save JSON for D3 Clusters       ###
+# ==================================== #
+tree.Drugs[,"isTop"] <- 0 
+dropJSON(tree.Drugs, path='Results/json/drug_clust.json')
+tree.Sampl[,"isTop"] <- 0 
+colnames(tree.Sampl) <- c("Cluster", "DrugName","isTop")
+dropJSON(tree.Sampl, path='Results/json/sample_clust.json')
+
 
 ### Save JSON for D3 Dendogram       ###
 # ==================================== #
@@ -105,37 +133,4 @@ sink()
 
 remove(dendo.list, jsonTree)
 # ==================================== #
-
-
-# Prepare Obtained Clusters for Drugs
-tree.Drugs$DrugName <- rownames(tree.Drugs)
-colnames(tree.Drugs) <- c("Cluster", "DrugName")
-tree.Drugs$DrugName <- lapply(tree.Drugs[,"DrugName"], str_trim)
-
-# Prepare Obtained Clusters for Samples
-tree.Sampl$SampleName <- rownames(tree.Sampl)
-colnames(tree.Sampl) <- c("Cluster", "SampleName")
-tree.Sampl$SampleName <- lapply(tree.Sampl[,"SampleName"], str_trim)
-
-# Get Drug Lists by Clusters
-drug.partition.list <- data.frame()
-for( clst in unique(tree.Drugs$Cluster) ){
-  drug.partition.list[clst,1] <- paste("Cluster ", clst, sep="")
-  drug.partition.list[clst,2] <- length(tree.Drugs[tree.Drugs[,"Cluster"] == clst,"DrugName"])
-  drug.partition.list[clst,3] <- gsub(",", "", toString( tree.Drugs[tree.Drugs[,"Cluster"] == clst,"DrugName"] )) 
-}
-colnames(drug.partition.list) <- c("ClusterSym", "Cluster.Size", "Drug.List")
-
-# Get Sample Lists by Clusters
-smpl.partition.list <- data.frame()
-for( clst in unique(tree.Sampl$Cluster) ){
-  smpl.partition.list[clst,1] <- paste("Cluster ", clst, sep="")
-  smpl.partition.list[clst,2] <- length(tree.Sampl[tree.Sampl[,"Cluster"] == clst,"SampleName"])
-  smpl.partition.list[clst,3] <- gsub(",", "", toString( tree.Sampl[tree.Sampl[,"Cluster"] == clst,"SampleName"] )) 
-}
-colnames(smpl.partition.list) <- c("ClusterSym", "Cluster.Size", "Sample.List")
-
-# Save R Objects to a file
-save(tree.Drugs, tree.Sampl, dsrt.DATA, matrix.CSamples, matrix.CDrugs, drug.partition.list, smpl.partition.list, file = "RData/Clusters.RData")
-
 
